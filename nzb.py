@@ -1,12 +1,14 @@
 # Imports
 #############################################################################
 
-import os
-import sys
 import base64
+import json
+import os
+import shlex
+import sys
+import traceback
 import urllib
 import urllib2
-import traceback
 
 
 # Import aliases
@@ -22,9 +24,21 @@ PROCESS_SUCCESS=93
 PROCESS_ERROR=94
 PROCESS_NONE=95
 
+NZBGET_HOST=os.environ['NZBOP_CONTROLIP']
+NZBGET_PORT=os.environ['NZBOP_CONTROLPORT']
+NZBGET_USERNAME=os.environ['NZBOP_CONTROLUSERNAME']
+NZBGET_PASSWORD=os.environ['NZBOP_CONTROLPASSWORD']
+
+# If the IP address has no real value, set to localhost.
+if NZBGET_HOST == '0.0.0.0': NZBGET_HOST = '127.0.0.1'
+
 
 # Logging
 #############################################################################
+
+def log_debug(message):
+    log_write('DEBUG', message)
+
 
 def log_detail(message):
     log_write('DETAIL', message)
@@ -51,7 +65,7 @@ def log_write(type, message):
 
 def command(url_command):
     url = 'http://%s:%s/jsonrpc/%s' % (NZBGET_HOST, NZBGET_PORT, url_command)
-    log_detail('Command: %s.' % url)
+    log_debug('Command: %s.' % url)
 
     auth = '%s:%s' % (NZBGET_USERNAME, NZBGET_PASSWORD)
     auth_token = base64.encodestring(auth).replace('\n', '')
@@ -71,7 +85,7 @@ def proxy():
     password = urllib.quote(NZBGET_PASSWORD, safe='')
     url = 'http://%s:%s@%s:%s/xmlrpc' % (username, password, NZBGET_HOST, NZBGET_PORT)
 
-    log_detail('Proxy: %s.' % url)
+    log_debug('Proxy: %s.' % url)
 
     return ServerProxy(url)
 
@@ -148,6 +162,11 @@ def get_nzb_category():
     return os.environ[prefix + 'CATEGORY']
 
 
+def get_nzb_data(nzbid):
+    url = 'listfiles?1=0&2=0&3=%s' % nzbid
+    return command(url)
+
+
 def get_nzb_directory():
     prefix = get_nzb_prefix()
     return os.environ[prefix + 'DIRECTORY']
@@ -162,6 +181,15 @@ def get_nzb_id():
     prefix = get_nzb_prefix()
     return os.environ[prefix + 'NZBID']
 
+
+def get_nzb_files(nzbid):
+    data = json.loads(get_nzb_data(nzbid))
+    files = []
+
+    for item in data['result']:
+        files.append({ 'filename' : item['Filename'], 'id' : item['ID'] })
+
+    return files
 
 def get_nzb_name():
     prefix = get_nzb_prefix()
@@ -195,3 +223,26 @@ def get_script_option(name):
 
 def set_script_option(name, value):
     print '[NZB] NZBPR_%s=%s' % (name, value)
+
+
+def get_script_tempfolder(name):
+    tempdir = os.environ.get('NZBOP_TEMPDIR')
+    return '%s/%s' % (tempdir, name)
+
+
+def get_unrar():
+    """
+    Attempt to find the platform-specific command to unrar.
+    """
+    filename = 'unrar.exe' if os.name == 'nt' else 'unrar'
+    filepath = os.environ['NZBOP_UNRARCMD']
+
+    if os.path.isfile(filepath) and filepath.lower().endswith(filename):
+        return filepath
+
+    parts = shlex.split(filepath)
+    for part in parts:
+        if part.lower().endswith(filename):
+            return part
+
+    return filename
