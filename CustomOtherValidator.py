@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
-# Template Script
+# Checks if a file already exists and cancels download.
 #
-# Copyright (C) 2015 <name> <<email>>
+# Copyright (C) 2015 NativeCode Development <support@nativecode.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
