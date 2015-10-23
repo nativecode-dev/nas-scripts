@@ -82,6 +82,12 @@ def on_post_processing():
     return
 
 
+# Handle queuing
+##############################################################################
+def on_queueing():
+    return
+
+
 # Handle scan
 ##############################################################################
 def on_scan():
@@ -99,10 +105,12 @@ def execute():
 
         if event == 'NONE':
             # An event with NONE could mean we are in scan or post.
-            if 'NZBPP_NZBID' in os.environ:
+            if 'NZBPP_NZBNAME' in os.environ:
                 on_post_processing()
-            elif 'NZBPR__UNPACK_' in os.environ:
-                on_scan()
+            elif 'NZBNP_NZBNAME' in os.environ:
+                on_scanning()
+            elif 'NZBNA_NZBNAME' in os.environ:
+                on_queueing()
             else:
                 on_none()
         elif event == 'FILE_DOWNLOADED':

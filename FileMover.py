@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
-# EventHelper
+# <script_name>
 #
-# Copyright (C) 2015 NativeCode Development <support@nativecode.com>
+# Copyright (C) 2015 <name> <<email>>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,12 +20,11 @@
 #
 
 ##############################################################################
-### NZBGET FEED/SCAN/QUEUE/POST-PROCESSING SCRIPT                          ###
+### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
 
-# Provides output to help with debugging scripts.
+# <description_short>
 #
-# Provides some help to determine what environment variables are available
-# to scripts at different events.
+# <description_long>
 
 ##############################################################################
 ### OPTIONS                                                                ###
@@ -37,17 +36,7 @@
 #
 #ScriptState=Enabled
 
-# Enable or disable logging of environment keys (Disabled, Keys, Pairs).
-#
-# Turns writing to the info log the keys for environment variables.
-#ScriptOutput=Disabled
-
-# Filters environment variables based on prefix.
-#
-# Comma-separated list of environment prefixes to check.
-#PrefixFilters=NZBNA,NZBNP,NZBOP,NZBPO,NZBPP,NZBPR
-
-### NZBGET FEED/SCAN/QUEUE/POST-PROCESSING SCRIPT                          ###
+### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
 ##############################################################################
 
 
@@ -56,18 +45,11 @@
 import nzb
 import os
 import sys
-import traceback
+
 
 # Options
 ##############################################################################
 SCRIPT_STATE=nzb.get_script_option('ScriptState')
-SCRIPT_OUTPUT=nzb.get_script_option('ScriptOutput')
-PREFIX_FILTERS=nzb.get_script_option('PrefixFilters').strip().split(',')
-
-
-# Constants
-##############################################################################
-IGNORED_KEYS=['NZBPR_CnpNZBFileName']
 
 
 # Handle no event
@@ -100,57 +82,10 @@ def on_post_processing():
     return
 
 
-# Handle queuing
+# Handle scan
 ##############################################################################
-def on_queueing():
+def on_scan():
     return
-
-
-# Handle scanning
-##############################################################################
-def on_scanning():
-    return
-
-
-# Log environment
-##############################################################################
-def log_environment():
-    if SCRIPT_OUTPUT == 'Disabled':
-        return
-    elif SCRIPT_OUTPUT == 'Keys':
-        keys = []
-
-        for key in os.environ.keys():
-            if not key_filtered(key):
-                for prefix in PREFIX_FILTERS:
-                    if key.startswith(prefix):
-                        keys.append(key)
-
-        nzb.log_info(' '.join(keys))
-    elif SCRIPT_OUTPUT == 'Pairs':
-        variables = []
-
-        for key in os.environ.keys():
-            if not key_filtered(key):
-                for prefix in PREFIX_FILTERS:
-                    if key.startswith(prefix):
-                        variables.append('%s = %s' % (key, os.environ[key]))
-
-        variables.sort()
-
-        for variable in variables:
-            nzb.log_info(variable)
-
-
-# Determines if environment key is filtered
-##############################################################################
-def key_filtered(key):
-    if key.endswith('_') or key.endswith(':'):
-        return True
-    elif key in IGNORED_KEYS:
-        return True
-    else:
-        return False
 
 
 # Script entry-point
@@ -164,15 +99,10 @@ def execute():
 
         if event == 'NONE':
             # An event with NONE could mean we are in scan or post.
-            if 'NZBPP_NZBNAME' in os.environ:
-                event = 'POST_PROCESSING'
+            if 'NZBPP_NZBID' in os.environ:
                 on_post_processing()
-            elif 'NZBNP_NZBNAME' in os.environ:
-                event = 'SCANNING'
-                on_scanning()
-            elif 'NZBNA_NZBNAME' in os.environ:
-                event = 'QUEUEING'
-                on_queueing()
+            elif 'NZBPR__UNPACK_' in os.environ:
+                on_scan()
             else:
                 on_none()
         elif event == 'FILE_DOWNLOADED':
@@ -181,13 +111,8 @@ def execute():
             on_nzb_added()
         elif event == 'NZB_DOWNLOADED':
             on_nzb_downloaded()
-
-        nzb.log_info('EVENT: %s' % event)
-        log_environment()
-    except Exception:
-        nbz.log_error('Something bad happened.')
+    except:
         clean_up()
-        sys.exit(nzb.PROCESS_ERROR)
 
     sys.exit(nzb.PROCESS_SUCCESS)
 
@@ -210,19 +135,20 @@ def main():
     calls here will exit with an exit code if the check fails.
     """
     try:
-        # If the script state was set to Disabled, we don't need to run.
+        # If the script state was set to Disabledm, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
             sys.exit(nzb.PROCESS_SUCCESS)
 
-        # Check the version NZBGet we're running on.
         nzb.check_nzb_version(13.0)
 
-        # Call our execute code.
-        execute()
-    except Exception:
-        sys.exit(nzb.PROCESS_ERROR)
+        # nzb.check_nzb_environment()
+        # nzb.check_nzb_failed()
+        # nzb.check_nzb_reprocess()
+        # nzb.check_nzb_status()
 
-    sys.exit(nzb.PROCESS_SUCCESS)
+        execute()
+    except:
+        sys.exit(nzb.PROCESS_ERROR)
 
 
 # Main entry-point
