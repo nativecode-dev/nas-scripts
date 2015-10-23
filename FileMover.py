@@ -83,8 +83,6 @@ def on_scheduled():
         if finaldir and category in categories and status == 'SUCCESS/ALL':
             if not proxy.editqueue('HistoryDelete', 0, '', [nzbid]):
                 nzb.log_warning('Failed to mark %s as hidden.' % nzbid)
-            else:
-                nzb.log_info('Marked %s as hidden.' % nzbid)
 
 
 # Handle post processing
