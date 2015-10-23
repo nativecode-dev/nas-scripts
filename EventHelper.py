@@ -100,7 +100,7 @@ def on_post_processing():
     return
 
 
-# Handle queuing
+# Handle queueing
 ##############################################################################
 def on_queueing():
     return

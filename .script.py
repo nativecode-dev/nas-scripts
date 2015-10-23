@@ -82,15 +82,15 @@ def on_post_processing():
     return
 
 
-# Handle queuing
+# Handle queueing
 ##############################################################################
 def on_queueing():
     return
 
 
-# Handle scan
+# Handle scanning
 ##############################################################################
-def on_scan():
+def on_scanning():
     return
 
 
