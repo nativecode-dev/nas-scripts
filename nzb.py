@@ -20,6 +20,8 @@ from xmlrpclib import ServerProxy
 # Constants
 #############################################################################
 
+PROCESS_FAIL_RUNTIME=0
+PROCESS_FAIL_ENVIRONMENT=1
 PROCESS_SUCCESS=93
 PROCESS_ERROR=94
 PROCESS_NONE=95
@@ -144,6 +146,29 @@ def check_nzb_failed():
         sys.exit(PROCESS_NONE)
 
 
+def check_nzb_version(min_version):
+    """
+    Get the version from the server and determine if the script
+    min_version is higher than or equal to what is running.
+    """    
+    try:
+        version = float(json.loads(command('version'))['result'])
+
+        if version < min_version:
+            log_info('Requires version %s, but found %s.' % (min_version, version))
+            sys.exit(PROCESS_FAIL_RUNTIME)
+
+        log_detail('Running NZBGet %s.' % version)
+    except:
+        log_error('Unable to determine server version. Requires version >= %s.' % min_version)
+        sys.exit(PROCESS_FAIL_RUNTIME)
+
+    if min_version > 12:
+        if not 'NZBOP_SCANSCRIPT' in os.environ:
+            log_error('Must be running NZBGet version higher than %s.' % min_version)
+            sys.exit(PROCESS_FAIL_RUNTIME)
+
+
 # Event helpers
 #############################################################################
 
@@ -175,6 +200,13 @@ def get_nzb_directory():
 def get_nzb_directory_final():
     prefix = get_nzb_prefix()
     return os.environ[prefix + 'FINALDIR']
+
+
+def get_nzb_event():
+    if 'NZBNA_EVENT' in os.environ:
+        return os.environ['NZBNA_EVENT']
+    else:
+        return 'NONE'
 
 
 def get_nzb_id():
@@ -218,10 +250,14 @@ def get_nzb_status_total():
 
 
 def get_script_option(name):
+    return os.environ.get('NZBPO_' + name)
+
+
+def get_script_state(name):
     return os.environ.get('NZBPR_' + name)
 
 
-def set_script_option(name, value):
+def set_script_state(name, value):
     print '[NZB] NZBPR_%s=%s' % (name, value)
 
 
