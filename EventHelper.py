@@ -20,7 +20,7 @@
 #
 
 ##############################################################################
-### NZBGET FEED/SCAN/QUEUE/POST-PROCESSING SCRIPT                          ###
+### NZBGET SCHEDULER/FEED/SCAN/QUEUE/POST-PROCESSING SCRIPT                ###
 
 # Provides output to help with debugging scripts.
 #
@@ -47,7 +47,7 @@
 # Comma-separated list of environment prefixes to check.
 #PrefixFilters=NZBNA,NZBNP,NZBOP,NZBPO,NZBPP,NZBPR
 
-### NZBGET FEED/SCAN/QUEUE/POST-PROCESSING SCRIPT                          ###
+### NZBGET SCHEDULER/FEED/SCAN/QUEUE/POST-PROCESSING SCRIPT                ###
 ##############################################################################
 
 
@@ -70,39 +70,51 @@ PREFIX_FILTERS=nzb.get_script_option('PrefixFilters').strip().split(',')
 IGNORED_KEYS=['NZBPR_CnpNZBFileName']
 
 
+# Handle scheduled
+##############################################################################
+def on_scheduled():
+    log_environment()
+    return
+
 # Handle NZB added
 ##############################################################################
 def on_nzb_added():
+    log_environment()
     return
 
 
 # Handle NZB downloaded
 ##############################################################################
 def on_nzb_downloaded():
+    log_environment()
     return
 
 
 # Handle file downloaded
 ##############################################################################
 def on_file_downloaded():
+    log_environment()
     return
 
 
 # Handle post processing
 ##############################################################################
 def on_post_processing():
+    log_environment()
     return
 
 
 # Handle queueing
 ##############################################################################
 def on_queueing():
+    log_environment()
     return
 
 
 # Handle scanning
 ##############################################################################
 def on_scanning():
+    log_environment()
     return
 
 
@@ -163,6 +175,8 @@ def main():
         # Check the version NZBGet we're running on.
         nzb.check_nzb_version(13.0)
 
+        nzb.log_info(nzb.get_nzb_event())
+
         # Wire up your event handlers before the call.
         # User the form nzb.set_handler(<event>, <function>)
         nzb.set_handler('FILE_DOWNLOADED', on_file_downloaded)
@@ -171,6 +185,7 @@ def main():
         nzb.set_handler('POST_PROCESSING', on_post_processing)
         nzb.set_handler('QUEUEING', on_queueing)
         nzb.set_handler('SCANNING', on_scanning)
+        nzb.set_handler('SCHEDULED', on_scheduled)
 
         # Do not change this line, it checks the current event
         # and executes any event handlers.

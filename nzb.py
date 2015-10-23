@@ -40,7 +40,9 @@ EVENTS = {
     'NZB_DOWNLOADED' : None,
     'POST_PROCESSING' : None,
     'QUEUEING' : None,
-    'SCANNING' : None
+    'SCANNING' : None,
+    'SCHEDULED' : None,
+    'UNKNOWN' : None
 }
 
 
@@ -130,6 +132,26 @@ def check_nzb_version(min_version):
 # Event helpers
 #############################################################################
 
+def get_nzb_event():
+    prefix = get_nzb_prefix()
+
+    event = 'NONE'
+    event_key = prefix + 'EVENT'
+
+    if event_key in os.environ:
+        event = os.environ[event_key]
+
+    if event == 'NONE':
+        if 'NZBPP_NZBNAME' in os.environ:
+            return 'POST_PROCESSING'
+        elif 'NZBNP_NZBNAME' in os.environ:
+            return 'SCANNING'
+        elif 'NZBNA_NZBNAME' in os.environ:
+            return 'QUEUEING'
+
+    return 'SCHEDULED'
+
+
 def get_handler(event):
     if event in EVENTS:
         return EVENTS[event]
@@ -182,29 +204,9 @@ def set_nzb_directory_final(directory):
     print '[NZB] FINALDIR=%s' % directory
 
 
-def get_nzb_event():
-    prefix = get_nzb_prefix()
-
-    event = 'NONE'
-    event_key = prefix + 'EVENT'
-
-    if event_key in os.environ:
-        event = os.environ[event_key]
-
-    if event == 'NONE':
-        if 'NZBPP_NZBNAME' in os.environ:
-            return 'POST_PROCESSING'
-        elif 'NZBNP_NZBNAME' in os.environ:
-            return 'SCANNING'
-        elif 'NZBNA_NZBNAME' in os.environ:
-            return 'QUEUEING'
-    else:
-        return event
-
-
 def get_nzb_id():
     prefix = get_nzb_prefix()
-    return os.environ[prefix + 'NZBID']
+    return int(os.environ[prefix + 'NZBID'])
 
 
 def get_nzb_files(nzbid):

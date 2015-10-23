@@ -115,11 +115,15 @@ def get_largest_file(category, directory, target):
 
 def hide_nzb(nzbid, finaldir):
     nzb.set_nzb_directory_final(finaldir)
+    nzbname = nzb.get_nzb_name()
 
     proxy = nzb.proxy()
-    proxy.editqueue('HistoryDelete', 0, '', [nzbid])
+    response = proxy.editqueue('HistoryDelete', 0, '', [int(nzbid)])
 
-    nzb.log_info('Marked %s (%s) as hidden.' % (nzb.get_nzb_name(), nzbid))
+    if response:
+        nzb.log_info('Marked %s (%s) as hidden.' % (nzbname, nzbid))
+    else:
+        nzb.log_warning('Failed to mark %s (%s) as hidden.' % (nzbname, nzbid))
 
 
 def get_category_path(name):
