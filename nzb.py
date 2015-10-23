@@ -203,8 +203,11 @@ def get_nzb_directory_final():
 
 
 def get_nzb_event():
-    if 'NZBNA_EVENT' in os.environ:
-        return os.environ['NZBNA_EVENT']
+    prefix = get_nzb_prefix()
+    event_key = prefix + 'EVENT'
+
+    if event_key in os.environ:
+        return os.environ[event_key]
     else:
         return 'NONE'
 
@@ -282,3 +285,21 @@ def get_unrar():
             return part
 
     return filename
+
+
+def split_dictionary(list, separator=':'):
+    dictionary = []
+    for item in list:
+        parts = item.split(separator)
+        key = parts[0]
+        value = parts[1]
+        kvp = { 'key' : key, 'value' : value }
+        dictionary.append(kvp)
+
+    return dictionary
+
+
+def get_script_option_dictionary(name, separator=':'):
+    items = get_script_option(name).split(',')
+
+    return split_dictionary(items, separator)

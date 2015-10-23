@@ -119,7 +119,7 @@ def execute():
             on_nzb_added()
         elif event == 'NZB_DOWNLOADED':
             on_nzb_downloaded()
-    except:
+    except Exception:
         clean_up()
 
     sys.exit(nzb.PROCESS_SUCCESS)
@@ -155,7 +155,7 @@ def main():
         # nzb.check_nzb_status()
 
         execute()
-    except:
+    except Exception:
         sys.exit(nzb.PROCESS_ERROR)
 
 
