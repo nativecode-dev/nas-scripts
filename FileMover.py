@@ -68,30 +68,6 @@ CATEGORIES=nzb.get_script_option_dictionary('CategoryLocations')
 MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mpg', '.mpeg', '.vob', '.iso', '.m4v']
 
 
-# Handle no event
-##############################################################################
-def on_none():
-    return
-
-
-# Handle NZB added
-##############################################################################
-def on_nzb_added():
-    return
-
-
-# Handle NZB downloaded
-##############################################################################
-def on_nzb_downloaded():
-    return
-
-
-# Handle file downloaded
-##############################################################################
-def on_file_downloaded():
-    return
-
-
 # Handle post processing
 ##############################################################################
 def on_post_processing():
@@ -140,44 +116,6 @@ def get_category_path(name):
     return
 
 
-# Handle queueing
-##############################################################################
-def on_queueing():
-    return
-
-
-# Handle scanning
-##############################################################################
-def on_scanning():
-    return
-
-
-# Script entry-point
-##############################################################################
-def execute():
-    """
-    Start executing script-specific logic here.
-    """
-    event = nzb.get_nzb_event()
-
-    if event == 'NONE':
-        # An event with NONE could mean we are in scan or post.
-        if 'NZBPP_NZBNAME' in os.environ:
-            on_post_processing()
-        elif 'NZBNP_NZBNAME' in os.environ:
-            on_scanning()
-        elif 'NZBNA_NZBNAME' in os.environ:
-            on_queueing()
-        else:
-            on_none()
-    elif event == 'FILE_DOWNLOADED':
-        on_file_downloaded()
-    elif event == 'NZB_ADDED':
-        on_nzb_added()
-    elif event == 'NZB_DOWNLOADED':
-        on_nzb_downloaded()
-
-
 # Cleanup script
 ##############################################################################
 def clean_up():
@@ -200,12 +138,24 @@ def main():
         if SCRIPT_STATE == 'Disabled':
             sys.exit(nzb.PROCESS_SUCCESS)
 
+        # Check version of NZBGet to make sure we can run.
         nzb.check_nzb_version(13.0)
 
-        execute()
+        # Check version of NZBGet to make sure we can run.
+        nzb.check_nzb_version(13.0)
+
+        # Wire up your event handlers before the call.
+        # User the form nzb.set_handler(<event>, <function>)
+        nzb.set_handler('POST_PROCESSING', on_post_processing)
+
+        # Do not change this line, it checks the current event
+        # and executes any event handlers.
+        nzb.execute()
     except Exception:
         traceback.print_exc()
         sys.exit(nzb.PROCESS_ERROR)
+    finally:
+        clean_up()
 
 
 # Main entry-point

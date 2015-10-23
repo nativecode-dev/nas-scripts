@@ -34,6 +34,15 @@ NZBGET_PASSWORD=os.environ['NZBOP_CONTROLPASSWORD']
 # If the IP address has no real value, set to localhost.
 if NZBGET_HOST == '0.0.0.0': NZBGET_HOST = '127.0.0.1'
 
+EVENTS = {
+    'FILE_DOWNLOADED' : None,
+    'NZB_ADDED' : None,
+    'NZB_DOWNLOADED' : None,
+    'POST_PROCESSING' : None,
+    'QUEUEING' : None,
+    'SCANNING' : None
+}
+
 
 # Logging
 #############################################################################
@@ -172,11 +181,24 @@ def check_nzb_version(min_version):
 # Event helpers
 #############################################################################
 
-def is_downloaded():
-    """
-    Checks to see if the nzb file is still downloading or has finished.
-    """
-    return os.environ.get('NZBNA_EVENT') == 'FILE_DOWNLOADED'
+def get_handler(event):
+    if event in EVENTS:
+        return EVENTS[event]
+
+
+def set_handler(event, callback):
+    if event in EVENTS:
+        EVENTS[event] = callback
+
+
+def execute():
+    event = get_nzb_event()
+    handler = get_handler(event)
+
+    if handler:
+        handler()
+    else:
+        log_error('Failed to fire event handler for %s.' % event)
 
 
 # Helpers
@@ -204,12 +226,20 @@ def get_nzb_directory_final():
 
 def get_nzb_event():
     prefix = get_nzb_prefix()
+
+    event = 'NONE'
     event_key = prefix + 'EVENT'
 
     if event_key in os.environ:
-        return os.environ[event_key]
+        event = os.environ[event_key]
+
+    if event == 'NONE':
+        if 'NZBPP_NZBNAME' in os.environ:
+            return 'POST_PROCESSING'
+        elif 'NZBNP_NZBNAME' in os.environ:
+            return 'SCANNING'
     else:
-        return 'NONE'
+        return event
 
 
 def get_nzb_id():

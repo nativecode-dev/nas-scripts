@@ -153,45 +153,6 @@ def key_filtered(key):
         return False
 
 
-# Script entry-point
-##############################################################################
-def execute():
-    """
-    Start executing script-specific logic here.
-    """
-    try:
-        event = nzb.get_nzb_event()
-
-        if event == 'NONE':
-            # An event with NONE could mean we are in scan or post.
-            if 'NZBPP_NZBNAME' in os.environ:
-                event = 'POST_PROCESSING'
-                on_post_processing()
-            elif 'NZBNP_NZBNAME' in os.environ:
-                event = 'SCANNING'
-                on_scanning()
-            elif 'NZBNA_NZBNAME' in os.environ:
-                event = 'QUEUEING'
-                on_queueing()
-            else:
-                on_none()
-        elif event == 'FILE_DOWNLOADED':
-            on_file_downloaded()
-        elif event == 'NZB_ADDED':
-            on_nzb_added()
-        elif event == 'NZB_DOWNLOADED':
-            on_nzb_downloaded()
-
-        nzb.log_info('EVENT: %s' % event)
-        log_environment()
-    except Exception:
-        nbz.log_error('Something bad happened.')
-        clean_up()
-        sys.exit(nzb.PROCESS_ERROR)
-
-    sys.exit(nzb.PROCESS_SUCCESS)
-
-
 # Cleanup script
 ##############################################################################
 def clean_up():
@@ -217,8 +178,18 @@ def main():
         # Check the version NZBGet we're running on.
         nzb.check_nzb_version(13.0)
 
-        # Call our execute code.
-        execute()
+        # Wire up your event handlers before the call.
+        # User the form nzb.set_handler(<event>, <function>)
+        nzb.set_handler('FILE_DOWNLOADED', on_file_downloaded)
+        nzb.set_handler('NZB_ADDED', on_nzb_added)
+        nzb.set_handler('NZB_DOWNLOADED', on_nzb_downloaded)
+        nzb.set_handler('POST_PROCESSING', on_post_processing)
+        nzb.set_handler('QUEUEING', on_queueing)
+        nzb.set_handler('SCANNING', on_scanning)
+
+        # Do not change this line, it checks the current event
+        # and executes any event handlers.
+        nzb.execute()
     except Exception:
         sys.exit(nzb.PROCESS_ERROR)
 
