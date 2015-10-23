@@ -99,7 +99,7 @@ def execute():
 
         if event == 'NONE':
             # An event with NONE could mean we are in scan or post.
-            if 'NZBPR_CNPNZBFILENAME' in os.environ:
+            if 'NZBPP_NZBID' in os.environ:
                 on_post_processing()
             elif 'NZBPR__UNPACK_' in os.environ:
                 on_scan()
@@ -139,10 +139,12 @@ def main():
         if SCRIPT_STATE == 'Disabled':
             sys.exit(nzb.PROCESS_SUCCESS)
 
-        nzb.check_nzb_environment()
-        nzb.check_nzb_failed()
-        nzb.check_nzb_reprocess()
-        nzb.check_nzb_status()
+        nzb.check_nzb_version(13.0)
+
+        # nzb.check_nzb_environment()
+        # nzb.check_nzb_failed()
+        # nzb.check_nzb_reprocess()
+        # nzb.check_nzb_status()
 
         execute()
     except:

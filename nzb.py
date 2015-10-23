@@ -158,7 +158,7 @@ def check_nzb_version(min_version):
             log_info('Requires version %s, but found %s.' % (min_version, version))
             sys.exit(PROCESS_FAIL_RUNTIME)
 
-        log_detail('Running NZBGet %s.' % version)
+        log_info('Running NZBGet %s on %s.' % (version, os.name))
     except Exception:
         log_error('Unable to determine server version. Requires version >= %s.' % min_version)
         sys.exit(PROCESS_FAIL_RUNTIME)

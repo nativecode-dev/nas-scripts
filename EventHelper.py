@@ -37,10 +37,15 @@
 #
 #ScriptState=Enabled
 
+# Enable or disable logging of environment keys (Disabled, Keys, Pairs).
+#
+# Turns writing to the info log the keys for environment variables.
+#ScriptOutput=Disabled
+
 # Filters environment variables based on prefix.
 #
 # Comma-separated list of environment prefixes to check.
-#EnvironmentPrefix=NZBNA,NZBPR
+#PrefixFilters=NZBNA,NZBPR,NZBPP
 
 ### NZBGET FEED/SCAN/QUEUE/POST-PROCESSING SCRIPT                          ###
 ##############################################################################
@@ -56,53 +61,90 @@ import traceback
 # Options
 ##############################################################################
 SCRIPT_STATE=nzb.get_script_option('ScriptState')
-ENVIRONMENT_PREFIXES=nzb.get_script_option('EnvironmentPrefix').split(',')
+SCRIPT_OUTPUT=nzb.get_script_option('ScriptOutput')
+PREFIX_FILTERS=nzb.get_script_option('PrefixFilters').strip().split(',')
+
+
+# Constants
+##############################################################################
+IGNORED_KEYS=['NZBPR_CnpNZBFileName']
 
 
 # Handle no event
 ##############################################################################
 def on_none():
-    variables = []
-
-    for key in os.environ.keys():
-        for prefix in ENVIRONMENT_PREFIXES:
-            if key.startswith(prefix):
-                variables.append('%s=%s' % (key, os.environ[key]))
-
-    variables.sort()
-
-    for variable in variables:
-        nzb.log_info(variable)
+    return
 
 
 # Handle NZB added
 ##############################################################################
 def on_nzb_added():
-    nzb.log_info('on_nzb_added')
+    return
 
 
 # Handle NZB downloaded
 ##############################################################################
 def on_nzb_downloaded():
-    nzb.log_info('on_nzb_downloaded')
+    return
 
 
 # Handle file downloaded
 ##############################################################################
 def on_file_downloaded():
-    nzb.log_info('on_file_downloaded')
+    return
 
 
 # Handle post processing
 ##############################################################################
 def on_post_processing():
-    nzb.log_info('on_post_processing')
+    return
 
 
 # Handle scan
 ##############################################################################
 def on_scan():
-    nzb.log_info('on_scan')
+    return
+
+
+# Log environment
+##############################################################################
+def log_environment():
+    if SCRIPT_OUTPUT == 'Disabled':
+        return
+    elif SCRIPT_OUTPUT == 'Keys':
+        keys = []
+
+        for key in os.environ.keys():
+            if not key_filtered(key):
+                for prefix in PREFIX_FILTERS:
+                    if key.startswith(prefix):
+                        keys.append(key)
+
+        nzb.log_info(' '.join(keys))
+    elif SCRIPT_OUTPUT == 'Pairs':
+        variables = []
+
+        for key in os.environ.keys():
+            if not key_filtered(key):
+                for prefix in PREFIX_FILTERS:
+                    if key.startswith(prefix):
+                        variables.append('%s = %s' % (key, os.environ[key]))
+
+        variables.sort()
+
+        for variable in variables:
+            nzb.log_info(variable)
+
+
+# Determines if environment key is filtered
+##############################################################################
+def key_filtered(key):
+    if key.endswith('_') or key.endswith(':'):
+        return True
+    elif key in IGNORED_KEYS:
+        return True
+    else:
+        return False
 
 
 # Script entry-point
@@ -113,13 +155,14 @@ def execute():
     """
     try:
         event = nzb.get_nzb_event()
-        nzb.log_info('EVENT: %s' % event)
 
         if event == 'NONE':
             # An event with NONE could mean we are in scan or post.
-            if 'NZBPR_CNPNZBFILENAME' in os.environ:
+            if 'NZBPP_NZBID' in os.environ:
+                event = 'POST_PROCESSING'
                 on_post_processing()
             elif 'NZBPR__UNPACK_' in os.environ:
+                event = 'SCAN'
                 on_scan()
             else:
                 on_none()
@@ -129,6 +172,9 @@ def execute():
             on_nzb_added()
         elif event == 'NZB_DOWNLOADED':
             on_nzb_downloaded()
+
+        nzb.log_info('EVENT: %s' % event)
+        log_environment()
     except Exception:
         nbz.log_error('Something bad happened.')
         clean_up()
