@@ -71,6 +71,7 @@ MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mp
 # Handle scheduled
 ##############################################################################
 def on_scheduled():
+    categories = get_categories()
     proxy = nzb.proxy()
     histories = proxy.history()
 
@@ -79,7 +80,7 @@ def on_scheduled():
         finaldir = history['FinalDir']
         status = history['Status']
         nzbid = int(history['NZBID'])
-        if finaldir and category == 'Other' and status == 'SUCCESS/ALL':
+        if finaldir and category in categories and status == 'SUCCESS/ALL':
             if not proxy.editqueue('HistoryDelete', 0, '', [nzbid]):
                 nzb.log_warning('Failed to mark %s as hidden.' % nzbid)
             else:
@@ -139,6 +140,14 @@ def populate_filelist(category, directory, target, accepted_files):
         elif os.path.isdir(filepath):
             populate_filelist(category, filepath, target, accepted_files)
 
+
+def get_categories():
+    categories = []
+    for category in CATEGORIES:
+        categories.append(category['key'])
+
+    return categories
+    
 
 def get_category_path(name):
     for category in CATEGORIES:
