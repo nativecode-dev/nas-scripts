@@ -104,57 +104,6 @@ def proxy():
 # Script checking
 #############################################################################
 
-def check_nzb_environment():
-    """
-    Check if the script is called from a compatible NZBGet version
-    (as queue-script or as pp-script)
-    """
-    ArticleCacheDefined = 'NZBOP_ARTICLECACHE' in os.environ
-    DirectoryDefined = 'NZBPP_DIRECTORY' in os.environ
-    EventDefined = 'NZBNA_EVENT' in os.environ
-
-    # TODO: This seems like a kind of retarded conditional.
-    if not (DirectoryDefined or EventDefined) or not ArticleCacheDefined:
-        print('[ERROR] *** NZBGet queue script ***')
-        print('[ERROR] This script is supposed to be called from nzbget (14.0 or later).')
-        sys.exit(PROCESS_FAIL_ENVIRONMENT)
-
-
-def check_nzb_status():
-    """
-    If nzb was already marked as bad, don't do any further detection.
-    """
-    if os.environ.get('NZBPP_STATUS') == 'FAILURE/BAD':
-        if os.environ.get('NZBPR_PPSTATUS_ARCHIVE_IGNORE') == 'yes':
-            # Print the message again during post-processing to ad it into the
-            # post-processing log (which is then used by notification scripts).
-            print('[WARNING] Download has ignored files.')
-        clean_up()
-        sys.exit(PROCESS_SUCCESS)
-
-
-def check_nzb_reprocess():
-    """
-    If nzb was reprocessed via the "Post-process again" action, the
-    download might not exist anymore.
-    """
-    DirectoryDefined = 'NZBPP_DIRECTORY' in os.environ
-    DirectoryExists = os.path.exists(os.environ.get('NZBPP_DIRECTORY'))
-    if DirectoryDefined and not DirectoryExists:
-        print('[WARNING] Destination directory does not exist.')
-        clean_up()
-        sys.exit(PROCESS_NONE)
-
-
-def check_nzb_failed():
-    """
-    If nzb is already failed, don't do any further actions.
-    """
-    if os.environ.get('NZBPP_TOTALSTATUS') == 'FAILURE':
-        clean_up()
-        sys.exit(PROCESS_NONE)
-
-
 def check_nzb_version(min_version):
     """
     Get the version from the server and determine if the script
@@ -196,6 +145,7 @@ def execute():
     handler = get_handler(event)
 
     if handler:
+        log_info('Calling handler for %s.' % event)
         handler()
     else:
         log_error('Failed to fire event handler for %s.' % event)
@@ -221,7 +171,15 @@ def get_nzb_directory():
 
 def get_nzb_directory_final():
     prefix = get_nzb_prefix()
-    return os.environ[prefix + 'FINALDIR']
+    key = prefix + 'FINALDIR'
+    if key in os.environ:
+        return os.environ[key]
+    else:
+        return None
+
+
+def set_nzb_directory_final(directory):
+    print '[NZB] FINALDIR=%s' % directory
 
 
 def get_nzb_event():
@@ -238,6 +196,8 @@ def get_nzb_event():
             return 'POST_PROCESSING'
         elif 'NZBNP_NZBNAME' in os.environ:
             return 'SCANNING'
+        elif 'NZBNA_NZBNAME' in os.environ:
+            return 'QUEUEING'
     else:
         return event
 

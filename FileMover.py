@@ -71,41 +71,55 @@ MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mp
 # Handle post processing
 ##############################################################################
 def on_post_processing():
-    category = nzb.get_nzb_category()
     directory = nzb.get_nzb_directory()
+    category = nzb.get_nzb_category()
+    target = get_category_path(category)
 
-    if os.path.exists(directory):
-        accepted_files = {}
-        target = get_category_path(category)
+    if os.path.isdir(directory):
+        # We need to move the files, delete the directory, and hide the NZB
+        # from history.
+        file = get_largest_file(category, directory, target)
 
-        for file in os.listdir(directory):
-            filepath = os.path.join(directory, file)
-            filename, extension = os.path.splitext(file)
-            if os.path.isfile(filepath) and extension in MEDIA_EXTENSIONS:
-                if target:
-                    accepted_files[file] = os.path.getsize(filepath)
+        source_path = os.path.join(directory, file)
+        target_path = os.path.join(target, file)
 
-        try:
-            accepted_files_by_size = sorted(accepted_files.items(), key=operator.itemgetter(1), reverse=True)
-            largest = accepted_files_by_size[0]
+        if os.path.isfile(target_path):
+            nzb.log_warning('File %s already exists.' % target_path)
+        else:
+            shutil.copyfile(source_path, target_path)
+            nzb.log_info('Copied %s to %s.' % (file, target_path))
 
-            # Try to copy the file if it doesn't exist.
-            filepath = os.path.join(directory, largest[0])
-            targetpath = os.path.join(target, largest[0])
+        shutil.rmtree(directory)
+        nzb.log_info('Deleted directory %s.' % directory)
+    else:
+        nzb.log_info('Directory %s does not exist.' % directory)
 
-            if not os.path.isfile(targetpath):
-                shutil.copyfile(filepath, targetpath)
-                nzb.log_info('Copied %s to %s.' % (filepath, targetpath))
+    nzbid = nzb.get_nzb_id()
+    hide_nzb(nzbid, target)
 
-            shutil.rmtree(directory)
-            nzb.log_info('Deleted directory %s.' % directory)
-        except Exception:
-            nzb.log_error('Failed to move file(s) for %s.' % directory)
-            raise
+
+def get_largest_file(category, directory, target):
+    accepted_files = {}
+
+    for file in os.listdir(directory):
+        filepath = os.path.join(directory, file)
+        filename, extension = os.path.splitext(file)
+        if os.path.isfile(filepath) and extension in MEDIA_EXTENSIONS:
+            if target:
+                accepted_files[file] = os.path.getsize(filepath)
+
+    accepted_files_by_size = sorted(accepted_files.items(), key=operator.itemgetter(1), reverse=True)
+    largest = accepted_files_by_size[0]
+    return largest[0]
+
+
+def hide_nzb(nzbid, finaldir):
+    nzb.set_nzb_directory_final(finaldir)
 
     proxy = nzb.proxy()
-    proxy.editqueue('HistoryDelete', 0, '', [nzb.get_nzb_id()])
-    nzb.log_info('Marked as hidden %s (%s).' % (nzb.get_nzb_name(), nzb.get_nzb_id()))
+    proxy.editqueue('HistoryDelete', 0, '', [nzbid])
+
+    nzb.log_info('Marked %s (%s) as hidden.' % (nzb.get_nzb_name(), nzbid))
 
 
 def get_category_path(name):
@@ -137,9 +151,6 @@ def main():
         # If the script state was set to Disabledm, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
             sys.exit(nzb.PROCESS_SUCCESS)
-
-        # Check version of NZBGet to make sure we can run.
-        nzb.check_nzb_version(13.0)
 
         # Check version of NZBGet to make sure we can run.
         nzb.check_nzb_version(13.0)

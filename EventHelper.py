@@ -70,12 +70,6 @@ PREFIX_FILTERS=nzb.get_script_option('PrefixFilters').strip().split(',')
 IGNORED_KEYS=['NZBPR_CnpNZBFileName']
 
 
-# Handle no event
-##############################################################################
-def on_none():
-    return
-
-
 # Handle NZB added
 ##############################################################################
 def on_nzb_added():
@@ -151,15 +145,6 @@ def key_filtered(key):
         return True
     else:
         return False
-
-
-# Cleanup script
-##############################################################################
-def clean_up():
-    """
-    Perform any script cleanup that is required here.
-    """
-    return
 
 
 # Main entry-point
