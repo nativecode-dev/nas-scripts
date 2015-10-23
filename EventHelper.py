@@ -156,7 +156,7 @@ def main():
     try:
         # If the script state was set to Disabled, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
-            sys.exit(PROCESS_SUCCESS)
+            sys.exit(nzb.PROCESS_SUCCESS)
 
         # Check the version NZBGet we're running on.
         nzb.check_nzb_version(13.0)

@@ -137,7 +137,7 @@ def main():
     try:
         # If the script state was set to Disabledm, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
-            sys.exit(PROCESS_SUCCESS)
+            sys.exit(nzb.PROCESS_SUCCESS)
 
         nzb.check_nzb_environment()
         nzb.check_nzb_failed()
