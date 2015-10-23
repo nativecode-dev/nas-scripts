@@ -20,7 +20,7 @@
 #
 
 ##############################################################################
-### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
+### NZBGET POST-PROCESSING SCRIPT                                          ###
 
 # <description_short>
 #
@@ -36,7 +36,7 @@
 #
 #ScriptState=Enabled
 
-### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
+### NZBGET POST-PROCESSING SCRIPT                                          ###
 ##############################################################################
 
 
@@ -78,7 +78,7 @@ def main():
         nzb.check_nzb_version(13.0)
 
         # Wire up your event handlers before the call.
-        # User the form nzb.set_handler(<event>, <function>)
+        # Use the form nzb.set_handler(<event>, <function>)
 
         # Do not change this line, it checks the current event
         # and executes any event handlers.
