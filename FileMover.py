@@ -98,17 +98,20 @@ def on_post_processing():
         # from history.
         file = get_largest_file(category, directory, target)
 
-        source_path = os.path.join(directory, file)
-        target_path = os.path.join(target, file)
+        if file:
+            source_path = file
+            target_path = os.path.join(target, os.path.basename(file))
 
-        if os.path.isfile(target_path):
-            nzb.log_warning('File %s already exists.' % target_path)
+            if os.path.isfile(target_path):
+                nzb.log_warning('File %s already exists.' % target_path)
+            else:
+                shutil.copyfile(source_path, target_path)
+                nzb.log_info('Copied %s to %s.' % (file, target_path))
+
+            shutil.rmtree(directory)
+            nzb.log_info('Deleted directory %s.' % directory)
         else:
-            shutil.copyfile(source_path, target_path)
-            nzb.log_info('Copied %s to %s.' % (file, target_path))
-
-        shutil.rmtree(directory)
-        nzb.log_info('Deleted directory %s.' % directory)
+            nzb.log_warning('Failed to find largest video file.')
     else:
         nzb.log_info('Directory %s does not exist.' % directory)
 
@@ -117,17 +120,24 @@ def on_post_processing():
 
 def get_largest_file(category, directory, target):
     accepted_files = {}
+    populate_filelist(category, directory, target, accepted_files)
 
+    if len(accepted_files) > 0:
+        accepted_files_by_size = sorted(accepted_files.items(), key=operator.itemgetter(1), reverse=True)
+        largest = accepted_files_by_size[0]
+        return largest[0]
+
+    return None
+
+
+def populate_filelist(category, directory, target, accepted_files):
     for file in os.listdir(directory):
         filepath = os.path.join(directory, file)
         filename, extension = os.path.splitext(file)
         if os.path.isfile(filepath) and extension in MEDIA_EXTENSIONS:
-            if target:
-                accepted_files[file] = os.path.getsize(filepath)
-
-    accepted_files_by_size = sorted(accepted_files.items(), key=operator.itemgetter(1), reverse=True)
-    largest = accepted_files_by_size[0]
-    return largest[0]
+            accepted_files[filepath] = os.path.getsize(filepath)
+        elif os.path.isdir(filepath):
+            populate_filelist(category, filepath, target, accepted_files)
 
 
 def get_category_path(name):

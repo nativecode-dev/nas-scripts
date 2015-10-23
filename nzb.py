@@ -311,7 +311,7 @@ def lock_create(name):
         file = open(lockfile, 'w')
         try:
             file.write(name)
-            log_info('Lock created %s.' % lockfile)
+            log_info('Lock file %s created.' % lockfile)
         finally:
             file.close()
 
