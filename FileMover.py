@@ -20,7 +20,7 @@
 #
 
 ##############################################################################
-### NZBGET POST-PROCESSING SCRIPT                                          ###
+### NZBGET SCHEDULER/POST-PROCESSING SCRIPT                                ###
 
 # Handles moving video files from different categories.
 #
@@ -43,7 +43,7 @@
 #
 #CategoryLocations=Other:/share/Media/Other
 
-### NZBGET POST-PROCESSING SCRIPT                                          ###
+### NZBGET SCHEDULER/POST-PROCESSING SCRIPT                                ###
 ##############################################################################
 
 
@@ -66,6 +66,24 @@ CATEGORIES=nzb.get_script_option_dictionary('CategoryLocations')
 # Constants
 ##############################################################################
 MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mpg', '.mpeg', '.vob', '.iso', '.m4v']
+
+
+# Handle scheduled
+##############################################################################
+def on_scheduled():
+    proxy = nzb.proxy()
+    histories = proxy.history()
+
+    for history in histories:
+        category = history['Category']
+        finaldir = history['FinalDir']
+        status = history['Status']
+        nzbid = int(history['NZBID'])
+        if finaldir and category == 'Other' and status == 'SUCCESS/ALL':
+            if not proxy.editqueue('HistoryDelete', 0, '', [nzbid]):
+                nzb.log_warning('Failed to mark %s as hidden.' % nzbid)
+            else:
+                nzb.log_info('Marked %s as hidden.' % nzbid)
 
 
 # Handle post processing
@@ -94,8 +112,7 @@ def on_post_processing():
     else:
         nzb.log_info('Directory %s does not exist.' % directory)
 
-    nzbid = nzb.get_nzb_id()
-    hide_nzb(nzbid, target)
+    nzb.set_nzb_directory_final(target)
 
 
 def get_largest_file(category, directory, target):
@@ -113,19 +130,6 @@ def get_largest_file(category, directory, target):
     return largest[0]
 
 
-def hide_nzb(nzbid, finaldir):
-    nzb.set_nzb_directory_final(finaldir)
-    nzbname = nzb.get_nzb_name()
-
-    proxy = nzb.proxy()
-    response = proxy.editqueue('HistoryDelete', 0, '', [int(nzbid)])
-
-    if response:
-        nzb.log_info('Marked %s (%s) as hidden.' % (nzbname, nzbid))
-    else:
-        nzb.log_warning('Failed to mark %s (%s) as hidden.' % (nzbname, nzbid))
-
-
 def get_category_path(name):
     for category in CATEGORIES:
         if category['key'] == name:
@@ -140,7 +144,7 @@ def clean_up():
     """
     Perform any script cleanup that is required here.
     """
-    return
+    nzb.lock_release('FileMover')
 
 
 # Main entry-point
@@ -152,9 +156,16 @@ def main():
     calls here will exit with an exit code if the check fails.
     """
     try:
-        # If the script state was set to Disabledm, we don't need to run.
+        # If the script state was set to Disabled, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
             sys.exit(nzb.PROCESS_SUCCESS)
+
+        # Check if lock exists.
+        if nzb.lock_exists('FileMover'):
+            nzb.log_info('Lock exists, skipping execution.')
+            sys.exit(nzb.PROCESS_SUCCESS)
+        else:
+            nzb.lock_create('FileMover')
 
         # Check version of NZBGet to make sure we can run.
         nzb.check_nzb_version(13.0)
@@ -162,6 +173,7 @@ def main():
         # Wire up your event handlers before the call.
         # User the form nzb.set_handler(<event>, <function>)
         nzb.set_handler('POST_PROCESSING', on_post_processing)
+        nzb.set_handler('SCHEDULED', on_scheduled)
 
         # Do not change this line, it checks the current event
         # and executes any event handlers.

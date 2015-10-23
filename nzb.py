@@ -143,13 +143,15 @@ def get_nzb_event():
 
     if event == 'NONE':
         if 'NZBPP_NZBNAME' in os.environ:
-            return 'POST_PROCESSING'
+            event = 'POST_PROCESSING'
         elif 'NZBNP_NZBNAME' in os.environ:
-            return 'SCANNING'
+            event = 'SCANNING'
         elif 'NZBNA_NZBNAME' in os.environ:
-            return 'QUEUEING'
+            event = 'QUEUEING'
+        else:
+            event = 'SCHEDULED'
 
-    return 'SCHEDULED'
+    return event
 
 
 def get_handler(event):
@@ -169,8 +171,6 @@ def execute():
     if handler:
         log_info('Calling handler for %s.' % event)
         handler()
-    else:
-        log_error('Failed to fire event handler for %s.' % event)
 
 
 # Helpers
@@ -244,6 +244,10 @@ def get_nzb_status_total():
     return os.environ[prefix + 'TOTALSTATUS']
 
 
+def get_nzb_tempfolder():
+    return os.environ.get('NZBOP_TEMPDIR')
+
+
 def get_script_option(name):
     return os.environ.get('NZBPO_' + name)
 
@@ -295,3 +299,37 @@ def get_script_option_dictionary(name, separator=':'):
     items = get_script_option(name).split(',')
 
     return split_dictionary(items, separator)
+
+
+def lock_create(name):
+    tempdir = get_nzb_tempfolder()
+    lockfile = os.path.join(tempdir, name + '.lock')
+
+    if os.path.isfile(lockfile):
+        log_warning('Lock file %s already exists.' % lockfile)
+    else:
+        file = open(lockfile, 'w')
+        try:
+            file.write(name)
+            log_info('Lock created %s.' % lockfile)
+        finally:
+            file.close()
+
+
+def lock_release(name):
+    tempdir = get_nzb_tempfolder()
+    lockfile = os.path.join(tempdir, name + '.lock')
+
+    if os.path.isfile(lockfile):
+        try:
+            os.remove(lockfile)
+            log_info('Lock file %s released.' % lockfile)
+        except Exception:
+            log_error('Failed to release lock file %s.' % lockfile)
+
+
+def lock_exists(name):
+    tempdir = get_nzb_tempfolder()
+    lockfile = os.path.join(tempdir, name + '.lock')
+
+    return os.path.isfile(lockfile)

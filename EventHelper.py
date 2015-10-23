@@ -172,6 +172,13 @@ def main():
         if SCRIPT_STATE == 'Disabled':
             sys.exit(nzb.PROCESS_SUCCESS)
 
+        # If a lock exists, we need to exit.
+        if nzb.lock_exists('EventHelper'):
+            nzb.log_info('Lock exists, skipping execution.')
+            sys.exit(nzb.PROCESS_SUCCESS)
+        else:
+            nzb.lock_create('EventHelper')
+
         # Check the version NZBGet we're running on.
         nzb.check_nzb_version(13.0)
 
@@ -192,6 +199,8 @@ def main():
         nzb.execute()
     except Exception:
         sys.exit(nzb.PROCESS_ERROR)
+    finally:
+        nzb.lock_release('EventHelper')
 
     sys.exit(nzb.PROCESS_SUCCESS)
 
