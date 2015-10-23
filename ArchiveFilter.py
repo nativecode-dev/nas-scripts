@@ -235,7 +235,7 @@ def clean_up():
     for temp_id in old_temp_files:
         temp_file = temp_folder + '/' + str(temp_id)
         try:
-            print('[DETAIL] Removin temp file %s.' % temp_file)
+            print('[DETAIL] Removing temp file %s.' % temp_file)
         except:
             print('[ERROR] Could not remove temp file %s.' % temp_file)
 

@@ -129,9 +129,10 @@ def execute():
             on_nzb_added()
         elif event == 'NZB_DOWNLOADED':
             on_nzb_downloaded()
-    except:
+    except Exception:
         nbz.log_error('Something bad happened.')
         clean_up()
+        sys.exit(nzb.PROCESS_ERROR)
 
     sys.exit(nzb.PROCESS_SUCCESS)
 
@@ -163,8 +164,10 @@ def main():
 
         # Call our execute code.
         execute()
-    except:
+    except Exception:
         sys.exit(nzb.PROCESS_ERROR)
+
+    sys.exit(nzb.PROCESS_SUCCESS)
 
 
 # Main entry-point
