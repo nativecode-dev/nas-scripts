@@ -147,8 +147,8 @@ def check_nzb_status():
     status = get_nzb_status()
     status_total = get_nzb_status_total()
     if status_total in ['FAILURE', 'DELETED']:
-        log_error('Exiting due to total status of %s (%s).' % (status_total, status))
-        exit(PROCESS_ERROR)
+        reason = 'Exiting due to total status of %s (%s).' % (status_total, status)
+        exit(PROCESS_ERROR, reason)
 
 
 def check_nzb_version(min_version):
@@ -160,13 +160,14 @@ def check_nzb_version(min_version):
         version = float(os.environ['NZBOP_VERSION'])
 
         if version < min_version:
-            log_info('Requires version %s, but found %s.' % (min_version, version))
-            exit(PROCESS_FAIL_RUNTIME)
+            reason = 'Requires version %s, but found %s.' % (min_version, version)
+            exit(PROCESS_FAIL_RUNTIME, reason)
 
         log_debug('Running NZBGet %s on %s.' % (version, os.name))
     except Exception:
-        log_error('Unable to determine server version. Requires version >= %s.' % min_version)
-        exit(PROCESS_FAIL_RUNTIME)
+        traceback.print_exc()
+        reason = 'Unable to determine server version. Requires version >= %s.' % min_version
+        exit(PROCESS_FAIL_RUNTIME, reason)
 
 
 def exit(exit_code, reason=None):
@@ -182,6 +183,11 @@ def exit(exit_code, reason=None):
 #############################################################################
 
 def get_nzb_event():
+    """
+    Parses the NZBNA_EVENT or NZBPP_EVENT and determines which mode it's
+    actually running in. We expand the number of events so that event
+    handlers can be created.
+    """
     prefix = get_nzb_prefix()
 
     event = 'NONE'
@@ -204,16 +210,25 @@ def get_nzb_event():
 
 
 def get_handler(event):
+    """
+    Attempts to find the associated event handler for the provided event.
+    """
     if event in EVENTS:
         return EVENTS[event]
 
 
 def set_handler(event, callback):
+    """
+    Sets a callback handler to associate with the event.
+    """
     if event in EVENTS:
         EVENTS[event] = callback
 
 
 def execute():
+    """
+    Executes the event handler associated with the current event.
+    """
     event = get_nzb_event()
     handler = get_handler(event)
 
@@ -222,7 +237,7 @@ def execute():
         handler()
 
 
-# Helpers
+# NZBGet helpers
 #############################################################################
 
 def get_nzb_age(nzbid):
@@ -242,14 +257,17 @@ def get_nzb_age(nzbid):
     return 0
 
 
+def set_nzb_bad():
+    """
+    Mark an NZB file as being bad. Note that the MarkAsBad in the XML RPC
+    method doesn't seem to work.
+    """
+    print '[NZB] MARK=BAD'
+
+
 def get_nzb_category():
     prefix = get_nzb_prefix()
     return os.environ[prefix + 'CATEGORY']
-
-
-def get_nzb_data(nzbid):
-    url = 'listfiles?1=0&2=0&3=%s' % nzbid
-    return command(url)
 
 
 def get_nzb_directory():
@@ -258,23 +276,25 @@ def get_nzb_directory():
 
 
 def get_nzb_directory_final():
-    prefix = get_nzb_prefix()
-    key = prefix + 'FINALDIR'
-    if key in os.environ:
-        return os.environ[key]
-    else:
-        return None
+    key = get_nzb_prefix() + 'FINALDIR'
+    return None if key not in os.environ else os.environ.get(key)
 
 
 def set_nzb_directory_final(directory):
     print '[NZB] FINALDIR=%s' % directory
 
 
-def set_nzb_bad():
-    print '[NZB] MARK=BAD'
+def get_nzb_id():
+    prefix = get_nzb_prefix()
+    return int(os.environ[prefix + 'NZBID'])
 
 
 def set_nzb_fail(nzbid):
+    """
+    There doesn't appear to be a way to set an NZB as having been failed for
+    reasons other than internal ones. This forces the issue by deleting as
+    much data as possible to force into into a FAILURE/PAR status.
+    """
     client = proxy()
     nzb_files = client.listfiles(0, 0, nzbid)
     
@@ -298,20 +318,6 @@ def set_nzb_fail(nzbid):
 
     return True
 
-
-def get_nzb_id():
-    prefix = get_nzb_prefix()
-    return int(os.environ[prefix + 'NZBID'])
-
-
-def get_nzb_files(nzbid):
-    data = json.loads(get_nzb_data(nzbid))
-
-    files = []
-    for item in data['result']:
-        files.append({ 'filename' : item['Filename'], 'id' : item['ID'] })
-
-    return files
 
 def get_nzb_name():
     prefix = get_nzb_prefix()
@@ -343,6 +349,9 @@ def get_nzb_tempfolder():
     return os.environ.get('NZBOP_TEMPDIR')
 
 
+# Script helpers
+##############################################################################
+
 def get_script_option(name):
     return os.environ.get('NZBPO_' + name)
 
@@ -364,12 +373,29 @@ def get_script_option_list(name, separator=','):
     return get_script_option(name).split(separator)
 
 
-def get_script_state(name):
-    return os.environ.get('NZBPR_' + name)
+def get_script_state(script_name, filename, default={}):
+    """
+    Checks to see if a JSON file with state data exists on disk.
+    If no file exists, it will use the provided default.
+    """
+    tempdir = get_script_tempfolder(script_name)
+    filepath = os.path.join(tempdir, filename + '.state')
 
+    if not os.path.isfile(filepath):
+        return default
+    else:
+        return json.load(open(filepath, 'r'))
 
-def set_script_state(name, value):
-    print '[NZB] NZBPR_%s=%s' % (name, value)
+def set_script_state(script_name, filename, state):
+    """
+    Saves the state date to the state file.
+    """
+    tempdir = get_script_tempfolder(script_name)
+    filepath = os.path.join(tempdir, filename + '.state')
+
+    json.dump(state, open(filepath, 'w'))
+
+    return state
 
 
 def get_script_tempfolder(*args):
@@ -388,6 +414,9 @@ def get_script_tempfile(script_name, filename):
     tempdir = get_script_tempfolder(script_name)
     return os.path.join(tempdir, filename)
 
+
+# Script locking functions
+##############################################################################
 
 def lock_create(name):
     tempdir = get_nzb_tempfolder()
@@ -413,6 +442,7 @@ def lock_release(name):
             os.remove(lockfile)
             log_debug('Lock file %s released.' % lockfile)
         except Exception:
+            traceback.print_exc()
             log_error('Failed to release lock file %s.' % lockfile)
 
 
@@ -446,6 +476,8 @@ def get_new_files(filelist, cache_filepath=None):
 ##############################################################################
 
 RAR_PASSWORD_STRINGS='*,wrong password,The specified password is incorrect,encrypted headers'
+REGEX_RAR = re.compile('.*\.r(\d+)', re.IGNORECASE)
+REGEX_RAR_PART = re.compile('.*\.part(\d+)\.rar', re.IGNORECASE)
 
 def get_rar():
     """
@@ -476,8 +508,8 @@ def get_rar_filelist(filepath):
 
         return filelist.splitlines()
     except Exception as e:
-        log_error('Failed checking RAR contents for %s. Error was %s.' % (filepath, e))
         traceback.print_exc()
+        log_error('Failed checking RAR contents for %s. Error was %s.' % (filepath, e))
         pass
 
 def get_rar_xmlfiles(filelist):
@@ -487,9 +519,9 @@ def get_rar_xmlfiles(filelist):
     """
     files = []
     for file in filelist:
-        file_id = file['ID']
+        file_id = int(file['ID'])
         file_name = file['Filename']
-        file_nzbid = file['NZBID']
+        file_nzbid = int(file['NZBID'])
         name, extension = os.path.splitext(file_name)
         number = get_rar_number(file_name)
 
@@ -505,10 +537,7 @@ def get_rar_xmlfiles(filelist):
 
 
 def get_rar_number(filename):
-    re_part = re.compile('.*\.part(\d+)\.rar', re.IGNORECASE)
-    re_rar = re.compile('.*\.r(\d+)', re.IGNORECASE)
-
-    match = re_part.match(filename) or re_rar.match(filename)
+    match = REGEX_RAR.match(filename) or REGEX_RAR_PART.match(filename)
 
     if match:
         return int(match.group(1))
@@ -540,6 +569,6 @@ def is_rar_protected(filepath):
         if is_rar_password_requested(text, error):
             return True
     except Exception as e:
-        log_error('Failed checking RAR %s for password. Error was %s.' % (filepath, e))
         traceback.print_exc()
+        log_error('Failed checking RAR %s for password. Error was %s.' % (filepath, e))
         return False

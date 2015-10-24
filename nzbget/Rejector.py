@@ -188,7 +188,7 @@ def reorder_queued_items(nzbid):
         fileid = int(files_sorted[0]['fileid'])
 
         if proxy.editqueue('FileMoveTop', 0, '', [fileid]):
-            nzb.log_info('Moved last RAR file %s to the top.' % filename)
+            nzb.log_detail('Moved last RAR file %s to the top.' % filename)
         else:
             nzb.log_warning('Failed to move last RAR file %s to the top.' % filename)
     else:
@@ -222,8 +222,9 @@ def update_filelist(nzbid):
                     cachefile.write(filename + '\n')
                     process_download(directory, filename)
             cachefile.close()
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
+        nzb.log_error(e)
         raise
     finally:
         nzb.lock_release(LOCK_FILELIST)
@@ -385,8 +386,9 @@ def main():
         # Do not change this line, it checks the current event
         # and executes any event handlers.
         nzb.execute()
-    except Exception:
-        nzb.exit(nzb.PROCESS_ERROR)
+    except Exception as e:
+        traceback.print_exc()
+        nzb.exit(nzb.PROCESS_ERROR, e)
         clean_up()
 
 

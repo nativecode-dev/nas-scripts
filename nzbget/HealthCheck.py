@@ -87,48 +87,43 @@ RETRY_MINUTES=int(nzb.get_script_option('RetryMinutes'))
 # Handles post-processing of the NZB file.
 ##############################################################################
 def on_post_processing():
+    # Create a lock so that the scheduler also doesn't try to run.
+    nzb.lock_create(SCRIPT_NAME)
+
     status = nzb.get_nzb_status()
 
-    if status == 'FAILURE/HEALTH':
-        try:
-            nzbid = nzb.get_nzb_id()
-            nzbname = nzb.get_nzb_name()
-            nzbage = nzb.get_nzb_age(nzbid)
+    if status != 'FAILURE/HEALTH':
+        nzb.log_detail('Nothing to do, status was %s.' % status)
+        nzb.exit(nzb.PROCESS_SUCCESS)
 
-            nzb.log_detail('Performing health check on %s (%s).' % (nzbname, status))
+    try:
+        nzbid = nzb.get_nzb_id()
+        nzbname = nzb.get_nzb_name()
 
-            # Check if the age of the file is older than our limit.
-            nzbage_hours = int(nzbage / 60)
-            if nzbage > AGE_LIMIT:
-                reason = 'File is %s hours old, but limit was %s.' % (nzbage_hours, AGE_LIMIT)
-                nzb.exit(nzb.PROCESS_SUCCESS, reason)
+        nzb.log_detail('Performing health check on %s (%s).' % (nzbname, status))
 
-            # Update the state so we can determine how long we should wait.
-            state = update_state(nzbid, nzbname)
-            retries = int(state['retries'])
-            wait_minutes = retries * RETRY_MINUTES
+        check_limit_age(nzbid, nzbname)
+        check_limit_retries(nzbid, nzbname)
 
-            # If we already reached the limit, we'll bail.
-            if retries >= RETRY_LIMIT:
-                nzb.exit(nzb.PROCESS_SUCCESS)
+        # Stop all other post-processing because we need to requeue the file.
+        nzb.log_warning('Pausing %s due to status of %s.' % (nzbname, status))
+        proxy = nzb.proxy()
 
-            # Stop all other post-processing because we need to requeue the file.
-            nzb.log_warning('Pausing %s due to status of %s.' % (nzbname, status))
-            proxy = nzb.proxy()
+        # Pause the file group.
+        if not proxy.editqueue('GroupPause', 0, '', [nzbid]):
+            reason = 'Failed to pause %s (%s).' % (nzbname, nzbid)
+            nzb.exit(nzb.PROCESS_FAIL_PROXY, reason)
 
-            # Pause the file group.
-            if not proxy.editqueue('GroupPause', 0, '', [nzbid]):
-                reason = 'Failed to pause %s (%s).' % (nzbname, nzbid)
-                nzb.exit(nzb.PROCESS_FAIL_PROXY, reason)
-
-            # Send the file back to the queue.
-            if not proxy.editqueue('HistoryReturn', 0, '', [nzbid]):
-                reason = 'Failed to requeue %s (%s).' % (nzbname, nzbid)
-                nzb.exit(nzb.PROCESS_FAIL_PROXY, reason)
-        except Exception as e:
-            nzb.exit(nzb.PROCESS_ERROR, e)
-        finally:
-            nzb.lock_release(SCRIPT_NAME)
+        # Send the file back to the queue.
+        if not proxy.editqueue('HistoryReturn', 0, '', [nzbid]):
+            reason = 'Failed to requeue %s (%s).' % (nzbname, nzbid)
+            nzb.exit(nzb.PROCESS_FAIL_PROXY, reason)
+    except Exception as e:
+        traceback.print_exc()
+        nzb.exit(nzb.PROCESS_ERROR, e)
+    finally:
+        nzb.lock_release(SCRIPT_NAME)
+        clean_up()
 
 
 # Handles scheduled tasks.
@@ -167,6 +162,41 @@ def on_scheduled():
             nzb.log_detail('Waiting for %s minutes, %s minutes elapsed.' % (wait_minutes, elapsed_minutes))
 
 
+# Checks if the file is likely to already have been propagated.
+##############################################################################
+def check_limit_age(nzbid, nzbname):
+    """
+    Checks if the age of the NZB is older than our limit. We assume that
+    anything older must be fairly complete and if the health check fails,
+    it's because the files are gone.
+    """
+    nzbage = nzb.get_nzb_age(nzbid)
+    nzbage_hours = int(nzbage / 60)
+    if nzbage > AGE_LIMIT:
+        clean_up()
+        reason = 'File %s is %s hours old, but limit was %s.' % (nzbname, nzbage_hours, AGE_LIMIT)
+        nzb.exit(nzb.PROCESS_SUCCESS, reason)
+
+
+# Checks the number of times file was already requeued.
+##############################################################################
+def check_limit_retries(nzbid, nzbname):
+    """
+    Checks to see how many retries have already been performed and exits
+    if we are the limit.
+    """
+    # Update the state so we can determine how long we should wait.
+    state = update_state(nzbid, nzbname)
+    retries = int(state['retries'])
+    wait_minutes = retries * RETRY_MINUTES
+
+    # If we already reached the limit, we'll bail.
+    if retries >= RETRY_LIMIT:
+        clean_up()
+        reason = 'Number of retries has been reached (%s) for %s (%s).' % (retries, nzbid, nzbname)
+        nzb.exit(nzb.PROCESS_SUCCESS)
+
+
 # Updates the state of the script to track things like retries.
 ##############################################################################
 def update_state(nzbid, nzbname):
@@ -198,7 +228,20 @@ def clean_up():
     """
     Perform any script cleanup that is required here.
     """
-    return
+    nzbid = nzb.get_nzb_id()
+
+    # Remove the state file.
+    update_filepath = get_update_filepath(nzbid)
+    if os.path.isfile(update_filepath):
+        os.remove(update_filepath)
+
+    if SCRIPT_ACTION == 'Debug':
+        # Check if the script path has no other files and delete it.
+        # NOTE: We can't blindly remove the directory because there might be
+        #       other instances waiting for their retries and need the state.
+        tempdir = nzb.get_script_tempfolder(SCRIPT_NAME)
+        if len(os.path.listdir(tempdir)) == 0:
+            os.rmdirs(tempdir)
 
 
 # Main entry-point
@@ -225,10 +268,9 @@ def main():
         # Do not change this line, it checks the current event
         # and executes any event handlers.
         nzb.execute()
-    except Exception:
-        nzb.exit(nzb.PROCESS_ERROR)
-    finally:
-        clean_up()
+    except Exception as e:
+        traceback.print_exc()
+        nzb.exit(nzb.PROCESS_ERROR, e)
 
 
 # Main entry-point

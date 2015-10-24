@@ -201,9 +201,9 @@ def main():
         # Do not change this line, it checks the current event
         # and executes any event handlers.
         nzb.execute()
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
-        nzb.exit(nzb.PROCESS_ERROR)
+        nzb.exit(nzb.PROCESS_ERROR, e)
     finally:
         clean_up()
 

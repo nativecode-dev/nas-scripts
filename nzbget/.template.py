@@ -45,6 +45,7 @@
 import nzb
 import os
 import sys
+import traceback
 
 
 # Options
@@ -72,7 +73,7 @@ def main():
     try:
         # If the script state was set to Disabled, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
-            sys.exit(nzb.PROCESS_SUCCESS)
+            nzb.exit(nzb.PROCESS_SUCCESS)
 
         # Check version of NZBGet to make sure we can run.
         nzb.check_nzb_version(13.0)
@@ -83,8 +84,9 @@ def main():
         # Do not change this line, it checks the current event
         # and executes any event handlers.
         nzb.execute()
-    except Exception:
-        sys.exit(nzb.PROCESS_ERROR)
+    except Exception as e:
+        traceback.print_exc()
+        nzb.exit(nzb.PROCESS_ERROR, e)
     finally:
         clean_up()
 
@@ -95,4 +97,4 @@ main()
 
 # NZBGet is weird and doesn't use 0 to signal the successful execution of a
 # script, so we use the PROCESS_SUCCESS code here.
-sys.exit(nzb.PROCESS_SUCCESS)
+nzb.exit(nzb.PROCESS_SUCCESS)
