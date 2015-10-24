@@ -23,7 +23,7 @@
 # Some of the code has been inspired and/or lifted from other scripts written
 # by talented individuals.
 #
-#   PasswordDetector: http://forum.nzbget.net/viewtopic.php?f=8&t=1391
+#   PasswordDetector: https://github.com/JVMed/PasswordDetector
 #   FakeDetector: https://github.com/nzbget/FakeDetector
 #   Completion: http://forum.nzbget.net/viewtopic.php?f=8&t=1736
 #
