@@ -181,6 +181,9 @@ def main():
         if SCRIPT_STATE == 'Disabled':
             sys.exit(nzb.PROCESS_SUCCESS)
 
+        # Check the status before we decide if we can continue.
+        nzb.check_nzb_status()
+
         # Check if lock exists.
         if nzb.lock_exists('FileMover'):
             nzb.log_info('Lock exists, skipping execution.')

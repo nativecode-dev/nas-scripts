@@ -106,6 +106,16 @@ def proxy():
 # Script checking
 #############################################################################
 
+def check_nzb_status():
+    """
+    Checks to see if the NZB has already failed or been deleted.
+    """
+    status = get_nzb_status_total()
+    if status in ['FAILURE', 'DELETED']:
+        log_warning('Exiting due to status of %s.' % status)
+        sys.exit(PROCESS_ERROR)
+
+
 def check_nzb_version(min_version):
     """
     Get the version from the server and determine if the script
@@ -122,11 +132,6 @@ def check_nzb_version(min_version):
     except Exception:
         log_error('Unable to determine server version. Requires version >= %s.' % min_version)
         sys.exit(PROCESS_FAIL_RUNTIME)
-
-    if min_version > 12:
-        if not 'NZBOP_SCANSCRIPT' in os.environ:
-            log_error('Must be running NZBGet version higher than %s.' % min_version)
-            sys.exit(PROCESS_FAIL_RUNTIME)
 
 
 # Event helpers
