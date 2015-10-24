@@ -75,6 +75,8 @@ def on_scheduled():
     proxy = nzb.proxy()
     histories = proxy.history()
 
+    nzb.log_info('Processing histories...')
+
     for history in histories:
         category = history['Category']
         finaldir = history['FinalDir']
@@ -83,6 +85,8 @@ def on_scheduled():
         if finaldir and category in categories and status == 'SUCCESS/ALL':
             if not proxy.editqueue('HistoryDelete', 0, '', [nzbid]):
                 nzb.log_warning('Failed to mark %s as hidden.' % nzbid)
+
+    nzb.log_info('Completed processing histories.')
 
 
 # Handle post processing

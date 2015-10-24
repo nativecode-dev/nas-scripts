@@ -118,7 +118,7 @@ def check_nzb_version(min_version):
             log_info('Requires version %s, but found %s.' % (min_version, version))
             sys.exit(PROCESS_FAIL_RUNTIME)
 
-        log_info('Running NZBGet %s on %s.' % (version, os.name))
+        log_debug('Running NZBGet %s on %s.' % (version, os.name))
     except Exception:
         log_error('Unable to determine server version. Requires version >= %s.' % min_version)
         sys.exit(PROCESS_FAIL_RUNTIME)
@@ -169,7 +169,7 @@ def execute():
     handler = get_handler(event)
 
     if handler:
-        log_info('Calling handler for %s.' % event)
+        log_info('Handler found for %s.' % event)
         handler()
 
 
@@ -252,6 +252,10 @@ def get_script_option(name):
     return os.environ.get('NZBPO_' + name)
 
 
+def get_script_option_list(name, separator=','):
+    return get_script_option(name).split(separator)
+
+
 def get_script_state(name):
     return os.environ.get('NZBPR_' + name)
 
@@ -260,28 +264,16 @@ def set_script_state(name, value):
     print '[NZB] NZBPR_%s=%s' % (name, value)
 
 
-def get_script_tempfolder(name):
+def get_script_tempfolder(*args):
     tempdir = os.environ.get('NZBOP_TEMPDIR')
-    return '%s/%s' % (tempdir, name)
 
+    for arg in args:
+        tempdir = os.path.join(tempdir, arg)
 
-def get_unrar():
-    """
-    Attempt to find the platform-specific command to unrar.
-    """
-    filename = 'unrar.exe' if os.name == 'nt' else 'unrar'
-    filepath = os.environ['NZBOP_UNRARCMD']
+    if not os.path.exists(tempdir):
+        os.makedirs(tempdir)
 
-    if os.path.isfile(filepath) and filepath.lower().endswith(filename):
-        return filepath
-
-    parts = shlex.split(filepath)
-    for part in parts:
-        if part.lower().endswith(filename):
-            return part
-
-    return filename
-
+    return tempdir
 
 def split_dictionary(list, separator=':'):
     dictionary = []

@@ -386,7 +386,8 @@ def get_nzb_status(nzb):
         unpause_nzb(nzb[0])  # unpause based on NZBget ID
     else:
         failed_limit = 100 - nzb[3] / 10.0
-        print '[V] Maximum failed articles limit: ' + str(failed_limit) + '%'
+        if VERBOSE:
+            print '[V] Maximum failed articles limit: ' + str(failed_limit) + '%'
         failed_ratio = check_failure_status(rar_msg_ids, failed_limit)
         if VERBOSE:
             print '[V] Total failed ratio: ' + str(round(failed_ratio,1)) + '%'
@@ -492,8 +493,8 @@ def get_dupe_nzb_status(nzb):
                     mark_bad_dupe(nzb_id)
             else: ##
                 failed_limit = 100 - nzb_critical_health / 10.0
-                print ('[V] Maximum failed articles limit: ' + 
-                    str(failed_limit) + '%')
+                if VERBOSE:
+                    print ('[V] Maximum failed articles limit: ' + str(failed_limit) + '%')
                 failed_ratio = check_failure_status(rar_msg_ids, failed_limit)
                 if VERBOSE:
                     print ('[V] Total failed ratio: ' + 

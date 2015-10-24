@@ -6,5 +6,6 @@ ln -s /share/Data/Nzbget-Scripts/EventHelper.py EventHelper.py
 ln -s /share/Data/Nzbget-Scripts/FakeDetector.py FakeDetector.py
 ln -s /share/Data/Nzbget-Scripts/FileMover.py FileMover.py
 ln -s /share/Data/Nzbget-Scripts/PasswordDetector.py PasswordDetector.py
+ln -s /share/Data/Nzbget-Scripts/Rejector.py Rejector.py
 ln -s /share/Data/Nzbget-Scripts/nzb.py nzb.py
 ln -s /share/Data/Nzbget-Scripts/nzbutils.py nzbutils.py

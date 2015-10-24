@@ -70,7 +70,7 @@ def main():
     calls here will exit with an exit code if the check fails.
     """
     try:
-        # If the script state was set to Disabledm, we don't need to run.
+        # If the script state was set to Disabled, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
             sys.exit(nzb.PROCESS_SUCCESS)
 

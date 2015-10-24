@@ -4,51 +4,134 @@ import json
 import nzb
 import os
 import re
+import subprocess
+import traceback
 
 
-# Rar functions
+# Constants
 ##############################################################################
 
-def rar_search_init(script_name):
+MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mpg', '.mpeg', '.vob', '.iso', '.m4v']
+
+
+# File and path functions
+##############################################################################
+
+def get_new_files(filelist, cache_filepath=None):
     """
-    Initialize temporary file to contain filenames.
+    Gets the list of files in the provided filelist. If a cache_filepath is
+    provided, it will join the lists together, removing files that already
+    existed in the cache.
     """
-    global rar_temp_filename
+    if cache_filepath and os.path.isfile(cache_filepath):
+        with open(cache_filepath, 'r') as cachefile:
+            cachedlist = cachefile.read().splitlines()
+            cachefile.close()
 
-    nzbid = nzb.get_nzb_id()
-    tempfolder = nzb.get_script_tempfolder(script_name)
-    rar_temp_filename = '%s/%s' % (tempfolder, nzbid)
-    nzb.log_debug('' % rar_temp_filename)
-
-    return rar_temp_filename
-
-
-def rar_sort_last_to_top():
-    nzbid = nzb.get_nzb_id()
-    nzbfiles = nzb.get_nzb_files(nzbid)
-
-    re_filename = re.compile('.*\.part(\d+)\.rar', re.IGNORECASE)
-    re_extension = re.compile('.*\.r(\d+)', re.IGNORECASE)
-
-    file_id = None
-    file_name = None
-    file_number = None
-
-    for nzbfile in nzbfiles:
-        id = nzbfile['id']
-        filename = nzbfile['filename']
-        
-        match = re_filename.match(filename) or re_extension.match(filename)
-        if match:
-            number = int(match.group(1))
-            if not file_number or number > file_number:
-                file_id = id
-                file_name = filename
-                file_number = number
-
-    if file_id:
-        nzb.log_info('Moving last rar-file to the top: %s.' % file_name)
-        proxy = nzb.proxy()
-        proxy.editqueue('FileMoveTop', 0, '', [file_id])
+        return list(set(filelist)-set(cachedlist))
     else:
-        nzb.log_info('Skipping sorting since no rar-files found.')
+        return filelist
+
+
+# RAR functions
+##############################################################################
+
+RAR_PASSWORD_STRINGS='*,wrong password,The specified password is incorrect,encrypted headers'
+
+def get_rar():
+    """
+    Attempt to find the platform-specific command to unrar.
+    """
+    filename = 'unrar.exe' if os.name == 'nt' else 'unrar'
+    filepath = os.environ['NZBOP_UNRARCMD']
+
+    if os.path.isfile(filepath) and filepath.lower().endswith(filename):
+        return filepath
+
+    parts = shlex.split(filepath)
+    for part in parts:
+        if part.lower().endswith(filename):
+            return part
+
+    return filename
+
+
+def get_rar_filelist(filepath):
+    """
+    Gets the list of the file contents from a RAR file.
+    """
+    try:
+        rar_command = [get_rar(), 'vb', filepath]
+        process = subprocess.Popen(rar_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        filelist, error = process.communicate()
+
+        return filelist.splitlines()
+    except Exception as e:
+        nzb.log_error('Failed checking RAR contents for %s. Error was %s.' % (filepath, e))
+        traceback.print_exc()
+        pass
+
+
+def get_rar_xmlfiles(filelist):
+    """
+    Provided a filelist from XMLRPC, enumerate the files and determine the part
+    number and return a list of parsed files.
+    """
+    files = []
+    for file in filelist:
+        file_id = file['ID']
+        file_name = file['Filename']
+        file_nzbid = file['NZBID']
+        name, extension = os.path.splitext(file_name)
+        number = get_rar_number(file_name)
+
+        # If the file was successfully parsed for a number, add it to the files.
+        if number:
+            files.append({
+                'filename' : file_name,
+                'fileid' : file_id,
+                'number' : number
+            })
+
+    return files
+
+
+def get_rar_number(filename):
+    re_part = re.compile('.*\.part(\d+)\.rar', re.IGNORECASE)
+    re_rar = re.compile('.*\.r(\d+)', re.IGNORECASE)
+
+    match = re_part.match(filename) or re_rar.match(filename)
+
+    if match:
+        return int(match.group(1))
+
+
+def is_rar_password_requested(text, error):
+    nzb.log_debug(text.translate(None, '\r\n'))
+    nzb.log_debug(error.translcate(None, '\r\n'))
+
+    password_strings = RAR_PASSWORD_STRINGS.split(',')
+
+    for password_string in password_strings:
+        cleaned = password_string.strip().lower()
+        if cleaned and (cleaned in text.lower() or cleaned in error.lower()):
+            return True
+
+    return False
+
+
+def is_rar_protected(filepath):
+    """
+    Attempts to check if the RAR is password protected.
+    """
+    try:
+        rar_command = [get_rar(), 'l', '-p-', '-c-', filepath]
+        rar_process = subprocess.Popen(rar_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        text, error = rar_process.communicate()
+
+        if is_rar_password_requested(text, error):
+            return True
+    except Exception as e:
+        nzb.log_error('Failed checking RAR %s for password. Error was %s.' % (filepath, e))
+        traceback.print_exc()
+        return False

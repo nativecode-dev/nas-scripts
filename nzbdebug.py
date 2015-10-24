@@ -6,5 +6,6 @@ def main():
     os.environ['NZBOP_CONTROLUSERNAME'] = 'admin'
     os.environ['NZBOP_CONTROLPASSWORD'] = 'Secure/(PAD)'
     os.environ['NZBPP_NZBID'] = '0'
+    os.environ['NZBOP_TEMPDIR'] = '/tmp'
 
 main()
