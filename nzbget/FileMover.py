@@ -74,11 +74,6 @@ SCRIPT_STATE=nzb.get_script_option('ScriptState')
 CATEGORIES=nzb.get_script_option_dictionary('CategoryLocations')
 
 
-# Constants
-##############################################################################
-MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mpg', '.mpeg', '.m4v']
-
-
 # Handle scheduled
 ##############################################################################
 def on_scheduled():
@@ -148,7 +143,7 @@ def populate_filelist(category, directory, target, accepted_files):
     for file in os.listdir(directory):
         filepath = os.path.join(directory, file)
         filename, extension = os.path.splitext(file)
-        if os.path.isfile(filepath) and extension in MEDIA_EXTENSIONS:
+        if os.path.isfile(filepath) and extension in nzb.MEDIA_EXTENSIONS:
             accepted_files[filepath] = os.path.getsize(filepath)
         elif os.path.isdir(filepath):
             populate_filelist(category, filepath, target, accepted_files)

@@ -114,7 +114,6 @@
 # Imports
 ##############################################################################
 import nzb
-import nzbutils
 import operator
 import os
 import re
@@ -179,7 +178,7 @@ def reorder_queued_items(nzbid):
     filelist = proxy.listfiles(0, 0, nzbid)
 
     # Enumerate the RAR files from the NZB and try to parse the part number.
-    files = nzbutils.get_rar_xmlfiles(filelist)
+    files = nzb.get_rar_xmlfiles(filelist)
 
     # If we found RAR files, we need to sort so that the last RAR file is the first
     # item in the list.
@@ -213,7 +212,7 @@ def update_filelist(nzbid):
         if not os.path.isdir(directory):
             nzb.log_warning('Directory %s does not appear valid.' % directory)
 
-        filelist = nzbutils.get_new_files(os.listdir(directory), cache_filepath)
+        filelist = nzb.get_new_files(os.listdir(directory), cache_filepath)
 
         # Cache the files that we've found that we just processed.
         with open(cache_filepath, 'a') as cachefile:
@@ -247,8 +246,8 @@ def process_download(directory, filename):
 
     filepath = os.path.join(directory, filename)
     cache_filepath = get_cache_filepath('%s-contents' % nzb.get_nzb_id())
-    contentlist = nzbutils.get_rar_filelist(filepath)
-    filelist = nzbutils.get_new_files(contentlist, cache_filepath)
+    contentlist = nzb.get_rar_filelist(filepath)
+    filelist = nzb.get_new_files(contentlist, cache_filepath)
 
     with open(cache_filepath, 'a') as cachefile:
         for file in filelist:
@@ -298,7 +297,7 @@ def check_fake(filename):
 # Checks if the file is password protected.
 def check_protected(directory, filename):
     filepath = os.path.join(directory, filename)
-    if nzbutils.is_rar_protected(filepath):
+    if nzb.is_rar_protected(filepath):
         reject('Requires a password to extract.')
 
 
