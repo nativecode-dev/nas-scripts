@@ -288,9 +288,10 @@ def check_disc_image(filename):
 # Checks if the file is considered part of being fake.
 ##############################################################################
 def check_fake(filename):
-    if filename.lower() in FAKE_WHITELIST:
+    name, extension = os.path.splitext(filename)
+    if name.lower() in FAKE_WHITELIST or extension.lower() in FAKE_WHITELIST:
         return
-    elif filename.lower() in FAKE_BLACKLIST:
+    elif name.lower() in FAKE_BLACKLIST or extension.lower() in FAKE_BLACKLIST:
         reject('Contains a file (%s) that appears to indicate a fake.' % filename)
 
 
@@ -323,9 +324,9 @@ def reject(reason):
 
     if not response:
         nzb.log_error('Failed to apply the reject action.')
-        sys.exit(nzb.PROCESS_ERROR)
+        nzb.exit(nzb.PROCESS_ERROR)
 
-    sys.exit(nzb.PROCESS_ERROR)
+    nzb.exit(nzb.PROCESS_ERROR)
 
 
 # Gets the temp folder for the script.
@@ -362,7 +363,7 @@ def main():
     try:
         # If the script state was set to Disabled, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
-            sys.exit(nzb.PROCESS_SUCCESS)
+            nzb.exit(nzb.PROCESS_SUCCESS)
 
         # Determine if we have features enabled.
         DiscImageEnabled = REJECT_DISC_IMAGES != 'Disabled'
@@ -370,7 +371,7 @@ def main():
         PasswordCheckEnabled = REJECT_PASSWORD != 'Disabled'
         if not (DiscImageEnabled and FakeCheckEnabled and PasswordCheckEnabled):
             nzb.log_info('No features enabled. Skipping script execution.')
-            sys.exit(nzb.PROCESS_SUCCESS)
+            nzb.exit(nzb.PROCESS_SUCCESS)
 
         # Check version of NZBGet to make sure we can run.
         nzb.check_nzb_version(13.0)
@@ -385,7 +386,7 @@ def main():
         # and executes any event handlers.
         nzb.execute()
     except Exception:
-        sys.exit(nzb.PROCESS_ERROR)
+        nzb.exit(nzb.PROCESS_ERROR)
         clean_up()
 
 
@@ -395,4 +396,4 @@ main()
 
 # NZBGet is weird and doesn't use 0 to signal the successful execution of a
 # script, so we use the PROCESS_SUCCESS code here.
-sys.exit(nzb.PROCESS_SUCCESS)
+nzb.exit(nzb.PROCESS_SUCCESS)

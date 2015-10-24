@@ -28,6 +28,8 @@
 #
 # Based on the selected categories, will move just the largest video files
 # to the specified location.
+#
+# Let's be honest here for a second. Most people will use this for Porn. :)
 
 ##############################################################################
 ### OPTIONS                                                                ###
@@ -99,6 +101,7 @@ def on_post_processing():
         file = get_largest_file(category, directory, target)
 
         if file:
+            nzb.log_detail('Found largest file %s.' % file)
             source_path = file
             target_path = os.path.join(target, os.path.basename(file))
 
@@ -107,6 +110,7 @@ def on_post_processing():
             else:
                 nzb.log_detail('Copying %s to %s.' % (file, target_path))
                 shutil.copyfile(source_path, target_path)
+                nzb.set_nzb_directory_final(target)
 
             shutil.rmtree(directory)
             nzb.log_detail('Deleted directory %s.' % directory)
@@ -114,8 +118,6 @@ def on_post_processing():
             nzb.log_warning('Failed to find largest video file.')
     else:
         nzb.log_warning('Directory %s does not exist.' % directory)
-
-    nzb.set_nzb_directory_final(target)
 
 
 def get_largest_file(category, directory, target):
@@ -176,7 +178,7 @@ def main():
     try:
         # If the script state was set to Disabled, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
-            sys.exit(nzb.PROCESS_SUCCESS)
+            nzb.exit(nzb.PROCESS_SUCCESS)
 
         # Check the status before we decide if we can continue.
         nzb.check_nzb_status()
@@ -184,7 +186,7 @@ def main():
         # Check if lock exists.
         if nzb.lock_exists('FileMover'):
             nzb.log_info('Lock exists, skipping execution.')
-            sys.exit(nzb.PROCESS_SUCCESS)
+            nzb.exit(nzb.PROCESS_SUCCESS)
         else:
             nzb.lock_create('FileMover')
 
@@ -201,7 +203,7 @@ def main():
         nzb.execute()
     except Exception:
         traceback.print_exc()
-        sys.exit(nzb.PROCESS_ERROR)
+        nzb.exit(nzb.PROCESS_ERROR)
     finally:
         clean_up()
 
@@ -212,4 +214,4 @@ main()
 
 # NZBGet is weird and doesn't use 0 to signal the successful execution of a
 # script, so we use the PROCESS_SUCCESS code here.
-sys.exit(nzb.PROCESS_SUCCESS)
+nzb.exit(nzb.PROCESS_SUCCESS)

@@ -30,6 +30,7 @@
 #############################################################################
 
 import base64
+import datetime
 import json
 import os
 import re
@@ -50,8 +51,9 @@ from xmlrpclib import ServerProxy
 # Constants
 #############################################################################
 
-PROCESS_FAIL_RUNTIME=0
-PROCESS_FAIL_ENVIRONMENT=1
+PROCESS_FAIL_ENVIRONMENT=10
+PROCESS_FAIL_RUNTIME=11
+PROCESS_FAIL_PROXY=12
 PROCESS_SUCCESS=93
 PROCESS_ERROR=94
 PROCESS_NONE=95
@@ -142,10 +144,11 @@ def check_nzb_status():
     """
     Checks to see if the NZB has already failed or been deleted.
     """
-    status = get_nzb_status_total()
-    if status in ['FAILURE', 'DELETED']:
-        log_warning('Exiting due to status of %s.' % status)
-        sys.exit(PROCESS_ERROR)
+    status = get_nzb_status()
+    status_total = get_nzb_status_total()
+    if status_total in ['FAILURE', 'DELETED']:
+        log_error('Exiting due to total status of %s (%s).' % (status_total, status))
+        exit(PROCESS_ERROR)
 
 
 def check_nzb_version(min_version):
@@ -158,12 +161,21 @@ def check_nzb_version(min_version):
 
         if version < min_version:
             log_info('Requires version %s, but found %s.' % (min_version, version))
-            sys.exit(PROCESS_FAIL_RUNTIME)
+            exit(PROCESS_FAIL_RUNTIME)
 
         log_debug('Running NZBGet %s on %s.' % (version, os.name))
     except Exception:
         log_error('Unable to determine server version. Requires version >= %s.' % min_version)
-        sys.exit(PROCESS_FAIL_RUNTIME)
+        exit(PROCESS_FAIL_RUNTIME)
+
+
+def exit(exit_code, reason=None):
+    if reason and exit_code == PROCESS_SUCCESS:
+        log_info(reason)
+    elif reason:
+        log_error(reason)
+
+    sys.exit(exit_code)
 
 
 # Event helpers
@@ -213,6 +225,23 @@ def execute():
 # Helpers
 #############################################################################
 
+def get_nzb_age(nzbid):
+    """
+    Gets the age based on the first time an article was posted.
+    """
+    now = datetime.datetime.utcnow()
+    groups = proxy().listgroups(0)
+    for group in groups:
+        group_nzbid = int(group['NZBID'])
+        if group_nzbid == nzbid:
+            timestamp = int(group['MinPostTime'])
+            last_post = datetime.datetime.fromtimestamp(timestamp)
+            delta = now - last_post
+            return int(delta / 60 / 60)
+
+    return 0
+
+
 def get_nzb_category():
     prefix = get_nzb_prefix()
     return os.environ[prefix + 'CATEGORY']
@@ -252,9 +281,16 @@ def set_nzb_fail(nzbid):
     for nzb_file in nzb_files:
         nzb_file_id = int(nzb_file['ID'])
         nzb_file_name = nzb_file['Filename']
-        name, extension = os.path.splitext(nzb_file_name)
 
-        if extension == '.par2' or extension != '.rar':
+        name, extension = os.path.splitext(nzb_file_name)
+        delete_file = extension == '.par2' or extension != '.rar'
+
+        # If the RAR is a part, we want to leave the first part alone.
+        rar_number = get_rar_number(nzb_file_name)
+        if rar_number > 1:
+            delete_file = True
+
+        if delete_file:
             log_warning('Deleting %s to force a failure.' % nzb_file_name)
             if not client.editqueue('FileDelete', 0, '', [nzb_file_id]):
                 log_error('Failed to delete file %s.' % nzb_file_id)
@@ -348,6 +384,11 @@ def get_script_tempfolder(*args):
     return tempdir
 
 
+def get_script_tempfile(script_name, filename):
+    tempdir = get_script_tempfolder(script_name)
+    return os.path.join(tempdir, filename)
+
+
 def lock_create(name):
     tempdir = get_nzb_tempfolder()
     lockfile = os.path.join(tempdir, name + '.lock')
@@ -435,7 +476,7 @@ def get_rar_filelist(filepath):
 
         return filelist.splitlines()
     except Exception as e:
-        nzb.log_error('Failed checking RAR contents for %s. Error was %s.' % (filepath, e))
+        log_error('Failed checking RAR contents for %s. Error was %s.' % (filepath, e))
         traceback.print_exc()
         pass
 
@@ -474,8 +515,8 @@ def get_rar_number(filename):
 
 
 def is_rar_password_requested(text, error):
-    nzb.log_debug(text.translate(None, '\r\n'))
-    nzb.log_debug(error.translate(None, '\r\n'))
+    log_debug(text.translate(None, '\r\n'))
+    log_debug(error.translate(None, '\r\n'))
 
     password_strings = RAR_PASSWORD_STRINGS.split(',')
 
@@ -499,6 +540,6 @@ def is_rar_protected(filepath):
         if is_rar_password_requested(text, error):
             return True
     except Exception as e:
-        nzb.log_error('Failed checking RAR %s for password. Error was %s.' % (filepath, e))
+        log_error('Failed checking RAR %s for password. Error was %s.' % (filepath, e))
         traceback.print_exc()
         return False

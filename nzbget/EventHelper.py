@@ -170,19 +170,12 @@ def main():
     try:
         # If the script state was set to Disabled, we don't need to run.
         if SCRIPT_STATE == 'Disabled':
-            sys.exit(nzb.PROCESS_SUCCESS)
-
-        # If a lock exists, we need to exit.
-        if nzb.lock_exists('EventHelper'):
-            nzb.log_info('Lock exists, skipping execution.')
-            sys.exit(nzb.PROCESS_SUCCESS)
-        else:
-            nzb.lock_create('EventHelper')
+            nzb.exit(nzb.PROCESS_SUCCESS)
 
         # Check the version NZBGet we're running on.
         nzb.check_nzb_version(13.0)
 
-        nzb.log_info(nzb.get_nzb_event())
+        nzb.log_info('CURRENT EVENT: %s' % nzb.get_nzb_event())
 
         # Wire up your event handlers before the call.
         # User the form nzb.set_handler(<event>, <function>)
@@ -198,11 +191,9 @@ def main():
         # and executes any event handlers.
         nzb.execute()
     except Exception:
-        sys.exit(nzb.PROCESS_ERROR)
-    finally:
-        nzb.lock_release('EventHelper')
+        nzb.exit(nzb.PROCESS_ERROR)
 
-    sys.exit(nzb.PROCESS_SUCCESS)
+    nzb.exit(nzb.PROCESS_SUCCESS)
 
 
 # Main entry-point
@@ -211,4 +202,4 @@ main()
 
 # NZBGet is weird and doesn't use 0 to signal the successful execution of a
 # script, so we use the PROCESS_SUCCESS code here.
-sys.exit(nzb.PROCESS_SUCCESS)
+nzb.exit(nzb.PROCESS_SUCCESS)
