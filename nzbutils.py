@@ -108,7 +108,7 @@ def get_rar_number(filename):
 
 def is_rar_password_requested(text, error):
     nzb.log_debug(text.translate(None, '\r\n'))
-    nzb.log_debug(error.translcate(None, '\r\n'))
+    nzb.log_debug(error.translate(None, '\r\n'))
 
     password_strings = RAR_PASSWORD_STRINGS.split(',')
 

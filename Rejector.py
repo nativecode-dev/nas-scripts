@@ -230,7 +230,7 @@ def process_download(directory, filename):
         nzb.log_warning('Directory %s does not appear valid.' % directory)
 
     filepath = os.path.join(directory, filename)
-    cache_filepath = get_cache_filepath('contents')
+    cache_filepath = get_cache_filepath('%s-contents' % nzb.get_nzb_id())
     contentlist = nzbutils.get_rar_filelist(filepath)
     filelist = nzbutils.get_new_files(contentlist, cache_filepath)
 

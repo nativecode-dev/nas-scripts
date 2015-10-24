@@ -108,15 +108,15 @@ def on_post_processing():
             if os.path.isfile(target_path):
                 nzb.log_warning('File %s already exists.' % target_path)
             else:
+                nzb.log_detail('Copying %s to %s.' % (file, target_path))
                 shutil.copyfile(source_path, target_path)
-                nzb.log_info('Copied %s to %s.' % (file, target_path))
 
             shutil.rmtree(directory)
-            nzb.log_info('Deleted directory %s.' % directory)
+            nzb.log_detail('Deleted directory %s.' % directory)
         else:
             nzb.log_warning('Failed to find largest video file.')
     else:
-        nzb.log_info('Directory %s does not exist.' % directory)
+        nzb.log_warning('Directory %s does not exist.' % directory)
 
     nzb.set_nzb_directory_final(target)
 

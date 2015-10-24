@@ -303,7 +303,7 @@ def lock_create(name):
         file = open(lockfile, 'w')
         try:
             file.write(name)
-            log_info('Lock file %s created.' % lockfile)
+            log_debug('Lock file %s created.' % lockfile)
         finally:
             file.close()
 
@@ -315,7 +315,7 @@ def lock_release(name):
     if os.path.isfile(lockfile):
         try:
             os.remove(lockfile)
-            log_info('Lock file %s released.' % lockfile)
+            log_debug('Lock file %s released.' % lockfile)
         except Exception:
             log_error('Failed to release lock file %s.' % lockfile)
 
