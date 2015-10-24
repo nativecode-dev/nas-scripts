@@ -112,7 +112,7 @@ def check_nzb_version(min_version):
     min_version is higher than or equal to what is running.
     """    
     try:
-        version = float(json.loads(command('version'))['result'])
+        version = float(os.environ['NZBOP_VERSION'])
 
         if version < min_version:
             log_info('Requires version %s, but found %s.' % (min_version, version))
@@ -202,6 +202,28 @@ def get_nzb_directory_final():
 
 def set_nzb_directory_final(directory):
     print '[NZB] FINALDIR=%s' % directory
+
+
+def set_nzb_bad():
+    print '[NZB] MARK=BAD'
+
+
+def set_nzb_fail(nzbid):
+    client = proxy()
+    nzb_files = client.listfiles(0, 0, nzbid)
+    
+    for nzb_file in nzb_files:
+        nzb_file_id = int(nzb_file['ID'])
+        nzb_file_name = nzb_file['Filename']
+
+        name, extension = os.path.splitext(nzb_file_name)
+        if extension == '.par2' or extension != '.rar':
+            log_warning('Deleting %s to force a failure.' % nzb_file_name)
+            if not client.editqueue('FileDelete', 0, '', [nzb_file_id]):
+                log_error('Failed to delete file %s.' % nzb_file_id)
+                return False
+
+    return True
 
 
 def get_nzb_id():

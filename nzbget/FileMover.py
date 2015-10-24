@@ -65,7 +65,7 @@ CATEGORIES=nzb.get_script_option_dictionary('CategoryLocations')
 
 # Constants
 ##############################################################################
-MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mpg', '.mpeg', '.vob', '.iso', '.m4v']
+MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mpg', '.mpeg', '.m4v']
 
 
 # Handle scheduled

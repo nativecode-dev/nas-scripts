@@ -117,6 +117,7 @@ import traceback
 SCRIPT_STATE=nzb.get_script_option('ScriptState')
 FAKE_BLACKLIST=nzb.get_script_option_list('FakeBlacklist')
 FAKE_WHITELIST=nzb.get_script_option_list('FakeWhitelist')
+REJECT_ACTION=nzb.get_script_option('RejectAction')
 REJECT_DISC_IMAGES=nzb.get_script_option('RejectDiscImages')
 REJECT_FAKES=nzb.get_script_option('RejectFakes')
 REJECT_PASSWORD=nzb.get_script_option('RejectPassword')
@@ -141,6 +142,10 @@ def on_file_downloaded():
 # Handles when an NZB is added to the queue.
 ##############################################################################
 def on_nzb_added():
+    # Clean up any previous runs.
+    clean_up()
+
+    # Lock the script from running again.
     nzb.lock_create(SCRIPT_NAME)
     nzbid = nzb.get_nzb_id()
 
@@ -244,6 +249,8 @@ def process_download(directory, filename):
 # Inspects the specified file from inside a RAR archive.
 ##############################################################################
 def inspect_rar_content(directory, filename):
+    nzb.log_detail('Checking RAR content file %s.' % filename)
+
     if REJECT_DISC_IMAGES != 'Disabled':
         check_disc_image(filename)
 
@@ -294,15 +301,21 @@ def reject(reason):
     response = None
 
     if REJECT_ACTION == 'Pause':
-        response = nzb.proxy().pausedownload()
+        nzb.log_error('File %s was rejected, pausing download.' % nzbname)
+        response = nzb.proxy().editqueue('GroupPause', 0, '', [nzbid])
     elif REJECT_ACTION == 'Bad':
-        response = nzb.proxy().editqueue('HistoryMarkBad', 0, '', [nzbid])
+        nzb.log_error('File %s was rejected, marking as bad.' % nzbname)
+        nzb.set_nzb_bad()
+        response = True
     elif REJECT_ACTION == 'Fail':
-        response = nzb.proxy().editqueue('HistoryMarkBad', 0, '', [nzbid])
+        nzb.log_error('File %s was rejected, marking as failed.' % nzbname)
+        response = nzb.set_nzb_fail(nzbid)
 
     if not response:
         nzb.log_error('Failed to apply the reject action.')
-        sys.exit(PROCESS_ERROR)
+        sys.exit(nzb.PROCESS_ERROR)
+
+    sys.exit(nzb.PROCESS_ERROR)
 
 
 # Gets the temp folder for the script.
