@@ -59,26 +59,26 @@
 # If the largest file that ends in .iso or .img appears to be a disc image,
 # the archive is rejected based on the RejectAction.
 #
-#RejectDiscImages=All
+# RejectDiscImages=All
 
 # Enable or disable fake archive validation (Enabled, Disabled).
 #
 # Checks archive files to ensure that they are not fakes seeded to NNTP
 # servers.
 #
-#RejectFakes=Enabled
+# RejectFakes=Enabled
 
 # Enable or disable password-protected achives (Enabled, Disabled).
 #
 # Performs a check on archives by checking if a password is required.
 #
-#RejectPassword=Enabled
+# RejectPassword=Enabled
 
 # Specifies a regex pattern to use when file matching.
 #
 # You can specify multiple regular expressions by separating them with
 # a comma and double-quoting each expression.
-#RejectPatterns=
+# RejectPatterns=
 
 # Determines action to take when an archive is rejected (Pause, Fail, Bad).
 #
@@ -86,7 +86,7 @@
 # and other systems that don't understand NZB's marked as Bad. You can also
 # set to Pause in order to perform a manual action.
 #
-#RejectAction=Fail
+# RejectAction=Fail
 
 # List of black-listed strings that potentially indicate the archive
 # is a fake.
@@ -96,7 +96,7 @@
 #
 # NOTE: All strings should be lowercase.
 #
-#FakeBlacklist=.exe,.bat,.sh
+# FakeBlacklist=.exe,.bat,.sh
 
 # List of white-listed strings that should be excluded from checking.
 #
@@ -105,7 +105,7 @@
 #
 # NOTE: All strings should be lowercase.
 #
-#FakeWhitelist=rename
+# FakeWhitelist=rename
 
 ### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
 ##############################################################################
@@ -174,6 +174,15 @@ def on_nzb_downloaded():
 # Moves the last RAR file to the top of the queue list.
 ##############################################################################
 def reorder_queued_items(nzbid):
+    """
+    Finds the last part of the RAR archive and moves to the top of the queue.
+    """
+    # If another script already sorted, then we can skip sorting.
+    if bool(nzb.get_script_variable('RAR_SORTED')):
+        nzb.log_info('Last RAR file was already sorted.')
+        return
+
+    # Get the list of files for this NZB.
     proxy = nzb.proxy()
     filelist = proxy.listfiles(0, 0, nzbid)
 
@@ -189,8 +198,9 @@ def reorder_queued_items(nzbid):
 
         if proxy.editqueue('FileMoveTop', 0, '', [fileid]):
             nzb.log_detail('Moved last RAR file %s to the top.' % filename)
+            nzb.set_script_variable('RAR_SORTED', True)
         else:
-            nzb.log_warning('Failed to move last RAR file %s to the top.' % filename)
+            nzb.log_warning('Failed to move the last RAR file %s.' % filename)
     else:
         nzb.log_warning('Failed to get list of files to sort.')
 
@@ -290,9 +300,14 @@ def check_disc_image(filename):
 ##############################################################################
 def check_fake(filename):
     name, extension = os.path.splitext(filename)
+
     if name.lower() in FAKE_WHITELIST or extension.lower() in FAKE_WHITELIST:
         return
-    elif name.lower() in FAKE_BLACKLIST or extension.lower() in FAKE_BLACKLIST:
+
+    blacklisted = name.lower() in FAKE_BLACKLIST or extension.lower() in FAKE_BLACKLIST
+    invalid = nzb.is_video_invalid(filename)
+
+    if blacklisted or invalid:
         reject('Contains a file (%s) that appears to indicate a fake.' % filename)
 
 
@@ -349,8 +364,9 @@ def clean_up():
         nzb.lock_release(LOCK_FILELIST)
 
     tempdir = get_temp_path()
-    if os.path.exists(tempdir):
-        shutil.rmtree(tempdir)
+    if len(os.listdir(tempdir)) == 0:
+        if os.path.exists(tempdir):
+            shutil.rmtree(tempdir)
 
 
 # Main entry-point

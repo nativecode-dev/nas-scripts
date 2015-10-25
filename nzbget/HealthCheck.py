@@ -88,7 +88,7 @@ RETRY_MINUTES=int(nzb.get_script_option('RetryMinutes'))
 ##############################################################################
 def on_post_processing():
     # Create a lock so that the scheduler also doesn't try to run.
-    nzb.lock_create(SCRIPT_NAME)
+    nzb.lock_reset(SCRIPT_NAME)
 
     status = nzb.get_nzb_status()
 
@@ -131,7 +131,7 @@ def on_post_processing():
 def on_scheduled():
     # Bail out if a lock exists, because post-processing is running.
     if nzb.lock_exists(SCRIPT_NAME):
-        nzb.exit(nzb.PROCESS_SUCESS)
+        nzb.exit(nzb.PROCESS_SUCCESS)
 
     groups = nzb.proxy().listgroups(0)
 
@@ -235,7 +235,7 @@ def clean_up():
     if os.path.isfile(update_filepath):
         os.remove(update_filepath)
 
-    if SCRIPT_ACTION == 'Debug':
+    if SCRIPT_STATE == 'Debug':
         # Check if the script path has no other files and delete it.
         # NOTE: We can't blindly remove the directory because there might be
         #       other instances waiting for their retries and need the state.

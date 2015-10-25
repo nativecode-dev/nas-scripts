@@ -37,6 +37,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 import traceback
 import urllib
 import urllib2
@@ -104,7 +105,7 @@ def log_warning(message):
 
 
 def log_write(type, message):
-    print '[%s] %s' % (type, message)
+    print('[%s] %s' % (type, message))
 
 
 # API
@@ -120,7 +121,7 @@ def command(url_command):
     request = urllib2.Request(url)
     request.add_header('Authorization', 'Basic %s' % auth_token)
 
-    response = urllib2.urlopen(request)
+    response = retry(lambda: urllib2.urlopen(request))
 
     return response.read()
 
@@ -262,7 +263,7 @@ def set_nzb_bad():
     Mark an NZB file as being bad. Note that the MarkAsBad in the XML RPC
     method doesn't seem to work.
     """
-    print '[NZB] MARK=BAD'
+    print('[NZB] MARK=BAD')
 
 
 def get_nzb_category():
@@ -281,7 +282,7 @@ def get_nzb_directory_final():
 
 
 def set_nzb_directory_final(directory):
-    print '[NZB] FINALDIR=%s' % directory
+    print('[NZB] FINALDIR=%s' % directory)
 
 
 def get_nzb_id():
@@ -415,6 +416,15 @@ def get_script_tempfile(script_name, filename):
     return os.path.join(tempdir, filename)
 
 
+def get_script_variable(name, default=None):
+    key = '[NZB] NZBPR_%s' % name.upper()
+    return default if not key in os.environ else os.environ.get(key)
+
+
+def set_script_variable(name, value):
+    print('[NZB] NZBPR_%s=%s' % (name.upper(), value))
+
+
 # Script locking functions
 ##############################################################################
 
@@ -433,6 +443,13 @@ def lock_create(name):
             file.close()
 
 
+def lock_exists(name):
+    tempdir = get_nzb_tempfolder()
+    lockfile = os.path.join(tempdir, name + '.lock')
+
+    return os.path.isfile(lockfile)
+
+
 def lock_release(name):
     tempdir = get_nzb_tempfolder()
     lockfile = os.path.join(tempdir, name + '.lock')
@@ -446,11 +463,9 @@ def lock_release(name):
             log_error('Failed to release lock file %s.' % lockfile)
 
 
-def lock_exists(name):
-    tempdir = get_nzb_tempfolder()
-    lockfile = os.path.join(tempdir, name + '.lock')
-
-    return os.path.isfile(lockfile)
+def lock_reset(name, recreate=True):
+    if lock_exists(name): lock_release(name)
+    if recreate: lock_create(name)    
 
 
 # File and path functions
@@ -572,3 +587,42 @@ def is_rar_protected(filepath):
         traceback.print_exc()
         log_error('Failed checking RAR %s for password. Error was %s.' % (filepath, e))
         return False
+
+
+# Other helpers
+##############################################################################
+
+def retry(callback, max_retries=3, seconds=0.1, pushout=True):
+    count = 0
+
+    while count < max_retries:
+        try:
+            return callback()
+        except Exception as e:
+            log_error('Retry got exception %s (%s/%s).' % (count, retry_count, e))
+            sleep_time = seconds * count if pushout else seconds
+            time.sleep(sleep_time)
+            count += 1
+
+
+# Misc helpers
+##############################################################################
+
+def guess_filename(filename):
+    try:
+        import guessit
+        return guessit.guess_file_info(filename)
+    except Exception as e:
+        name, extension = os.path.splitext(filename)
+        return {'title' : name}
+
+def is_video_invalid(filename):
+    name, extension = os.path.splitext(filename)
+    guess = guess_filename(filename)
+    return guess['title'] == name
+
+
+def is_video_file(filename):
+    name, extension = os.path.splitext(filename)
+    return extension in MEDIA_EXTENSIONS
+
