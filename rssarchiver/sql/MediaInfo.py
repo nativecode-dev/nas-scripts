@@ -8,6 +8,6 @@ class MediaInfo(InheritableSQLObject):
         return self.title
 
     date_released = DateCol(default=None)
-    links = RelatedJoin('Link')
+    link = ForeignKey('Link')
     title = StringCol(length=256)
     title_cleaned = property(get_title_cleaned)

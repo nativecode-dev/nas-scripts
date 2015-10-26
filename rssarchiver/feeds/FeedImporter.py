@@ -13,10 +13,10 @@ class FeedImporter(object):
     def __init__(self):
         return
 
-    def import_feed(self, url):
+    def import_feed(self, url, callback_exists=None, callback_parsed=None):
         try:
             feed = Retry(lambda: feedparser.parse(url))
-            return self._parse_feed(feed)
+            return self._parse_feed(feed, callback_exists, callback_parsed)
         except Exception as e:
             print('Failed to read or parse %s due to %s.' % (url, e))
             raise
