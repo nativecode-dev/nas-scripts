@@ -59,26 +59,26 @@
 # If the largest file that ends in .iso or .img appears to be a disc image,
 # the archive is rejected based on the RejectAction.
 #
-# RejectDiscImages=All
+#RejectDiscImages=All
 
 # Enable or disable fake archive validation (Enabled, Disabled).
 #
 # Checks archive files to ensure that they are not fakes seeded to NNTP
 # servers.
 #
-# RejectFakes=Enabled
+#RejectFakes=Enabled
 
 # Enable or disable password-protected achives (Enabled, Disabled).
 #
 # Performs a check on archives by checking if a password is required.
 #
-# RejectPassword=Enabled
+#RejectPassword=Enabled
 
 # Specifies a regex pattern to use when file matching.
 #
 # You can specify multiple regular expressions by separating them with
 # a comma and double-quoting each expression.
-# RejectPatterns=
+#RejectPatterns=
 
 # Determines action to take when an archive is rejected (Pause, Fail, Bad).
 #
@@ -86,7 +86,7 @@
 # and other systems that don't understand NZB's marked as Bad. You can also
 # set to Pause in order to perform a manual action.
 #
-# RejectAction=Fail
+#RejectAction=Fail
 
 # List of black-listed strings that potentially indicate the archive
 # is a fake.
@@ -96,7 +96,7 @@
 #
 # NOTE: All strings should be lowercase.
 #
-# FakeBlacklist=.exe,.bat,.sh
+#FakeBlacklist=.exe,.bat,.sh
 
 # List of white-listed strings that should be excluded from checking.
 #
@@ -105,7 +105,7 @@
 #
 # NOTE: All strings should be lowercase.
 #
-# FakeWhitelist=rename
+#FakeWhitelist=rename
 
 ### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
 ##############################################################################
@@ -305,7 +305,7 @@ def check_fake(filename):
         return
 
     blacklisted = name.lower() in FAKE_BLACKLIST or extension.lower() in FAKE_BLACKLIST
-    invalid = nzb.is_video_invalid(filename)
+    invalid = False if extension in nzb.MEDIA_EXTENSIONS else nzb.is_video_invalid(filename)
 
     if blacklisted or invalid:
         reject('Contains a file (%s) that appears to indicate a fake.' % filename)

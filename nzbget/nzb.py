@@ -67,7 +67,18 @@ NZBGET_PASSWORD=os.environ['NZBOP_CONTROLPASSWORD']
 # If the IP address has no real value, set to localhost.
 if NZBGET_HOST == '0.0.0.0': NZBGET_HOST = '127.0.0.1'
 
-MEDIA_EXTENSIONS=['.mkv', '.avi', '.divx', '.xvid', '.mov', '.wmv', '.mp4', '.mpg', '.mpeg', '.m4v']
+MEDIA_EXTENSIONS=[
+    '.avi',
+    '.divx',
+    '.m4v',
+    '.mkv',
+    '.mov',
+    '.mp4',
+    '.mpeg',
+    '.mpg',
+    '.wmv',
+    '.xvid'
+]
 
 EVENTS = {
     'FILE_DOWNLOADED' : None,
@@ -147,6 +158,7 @@ def check_nzb_status():
     """
     status = get_nzb_status()
     status_total = get_nzb_status_total()
+
     if status_total in ['FAILURE', 'DELETED']:
         reason = 'Exiting due to total status of %s (%s).' % (status_total, status)
         exit(PROCESS_ERROR, reason)
@@ -246,14 +258,15 @@ def get_nzb_age(nzbid):
     Gets the age based on the first time an article was posted.
     """
     now = datetime.datetime.utcnow()
-    groups = proxy().listgroups(0)
+    groups = retry(lambda: proxy().listgroups(0))
+
     for group in groups:
         group_nzbid = int(group['NZBID'])
         if group_nzbid == nzbid:
             timestamp = int(group['MinPostTime'])
             last_post = datetime.datetime.fromtimestamp(timestamp)
             delta = now - last_post
-            return int(delta / 60 / 60)
+            return int(delta.total_seconds() / 60 / 60)
 
     return 0
 
@@ -297,7 +310,7 @@ def set_nzb_fail(nzbid):
     much data as possible to force into into a FAILURE/PAR status.
     """
     client = proxy()
-    nzb_files = client.listfiles(0, 0, nzbid)
+    nzb_files = retry(lambda: client.listfiles(0, 0, nzbid))
     
     for nzb_file in nzb_files:
         nzb_file_id = int(nzb_file['ID'])
@@ -558,7 +571,12 @@ def get_rar_number(filename):
         return int(match.group(1))
 
 
-def is_rar_password_requested(text, error):
+def is_rar_file(filename):
+    match = REGEX_RAR.match(filename) or REGEX_RAR_PART.match(filename)
+    return True if match else False
+
+
+def is_rar_password_error(text, error):
     log_debug(text.translate(None, '\r\n'))
     log_debug(error.translate(None, '\r\n'))
 
@@ -581,8 +599,7 @@ def is_rar_protected(filepath):
         rar_process = subprocess.Popen(rar_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         text, error = rar_process.communicate()
 
-        if is_rar_password_requested(text, error):
-            return True
+        return is_rar_password_error(text, error)
     except Exception as e:
         traceback.print_exc()
         log_error('Failed checking RAR %s for password. Error was %s.' % (filepath, e))
@@ -604,6 +621,8 @@ def retry(callback, max_retries=3, seconds=0.1, pushout=True):
             time.sleep(sleep_time)
             count += 1
 
+    raise IOError('Retry failed after %s tries.' % max_retries)
+
 
 # Misc helpers
 ##############################################################################
@@ -614,6 +633,7 @@ def guess_filename(filename):
         return guessit.guess_file_info(filename)
     except Exception as e:
         name, extension = os.path.splitext(filename)
+        log_error(e)
         return {'title' : name}
 
 def is_video_invalid(filename):
@@ -625,4 +645,3 @@ def is_video_invalid(filename):
 def is_video_file(filename):
     name, extension = os.path.splitext(filename)
     return extension in MEDIA_EXTENSIONS
-
