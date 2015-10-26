@@ -15,7 +15,7 @@ class FeedImporter(object):
 
     def import_feed(self, url):
         try:
-            feed = retry(lambda: feedparser.parse(url))
+            feed = Retry(lambda: feedparser.parse(url))
             return self._parse_feed(feed)
         except Exception as e:
             print('Failed to read or parse %s due to %s.' % (url, e))

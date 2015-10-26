@@ -1,6 +1,6 @@
 import time
 
-def retry(callback, max_retries=3, seconds=0.1, pushout=True):
+def Retry(callback, max_retries=3, seconds=0.1, pushout=True):
     count = 0
 
     while count < max_retries:

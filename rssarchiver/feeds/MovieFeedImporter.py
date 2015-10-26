@@ -69,7 +69,7 @@ class MovieFeedImporter(FeedImporter):
 
 
     def _search_imdb_id(self, title, year):
-        movies = retry(lambda: MovieFeedImporter._imdb_client.search_movie(title))
+        movies = Retry(lambda: MovieFeedImporter._imdb_client.search_movie(title))
 
         for movie in movies:
             title_canonical = movie['long imdb canonical title']
