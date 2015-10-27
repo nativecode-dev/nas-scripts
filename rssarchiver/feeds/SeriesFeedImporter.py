@@ -87,6 +87,8 @@ class SeriesFeedImporter(FeedImporter):
                         # We might find the episode in another listing.
                         self.logger.exception(e)
                         pass
+                else:
+                    self.logger.debug('No match for %s and %s.' % (seriesname, title))
         except Exception as e:
             self.logger.exception(e)
             pass

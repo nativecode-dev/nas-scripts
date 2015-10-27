@@ -35,9 +35,9 @@ def import_feed(schema, type, url):
             rss_feed = RssFeed(type=type.lower(), url=url)
 
         if type.lower() == 'movies':
-            importer = MovieFeedImporter(logger, _handle_exists, _handle_movie)
+            importer = MovieFeedImporter(logger, lambda url: _handle_exists(RssMovieItem, url), _handle_movie)
         elif type.lower() == 'series':
-            importer = SeriesFeedImporter(logger, _handle_exists, _handle_series)
+            importer = SeriesFeedImporter(logger, lambda url: _handle_exists(RssSeriesItem, url), _handle_series)
         else:
             logger.info('Could not determine what feed importer to use for %s.' % type)
             sys.exit(1)
@@ -80,14 +80,15 @@ def _initialize_logging(filelog, syslog):
     logger.addHandler(handler_syslog)
 
     # File handler
-    handler_file = logging.handlers.RotatingFileHandler(filename=filelog)
+    rollover_size = 10240000
+    handler_file = logging.handlers.RotatingFileHandler(filename=filelog, maxBytes=rollover_size)
     handler_file.setFormatter(formatter)
     handler_file.setLevel(logging.DEBUG)
     logger.addHandler(handler_file)
 
 
-def _handle_exists(url):
-    exists = RssFeedItem.select(RssFeedItem.q.url==url).getOne(None)
+def _handle_exists(type, url):
+    exists = type.select(type.q.url==url).getOne(None)
 
     if exists:
         logger.info('Feed for %s already exists.' % url)
@@ -118,7 +119,8 @@ def _handle_series(feed_item):
         RssSeriesItem(date_published=feed_item.date_published, description=feed_item.description,
                       title=feed_item.title, url=feed_item.url, episode_number=feed_item.episode_number,
                       episode_title=feed_item.episode_title, season_number=feed_item.season_number,
-                      season_title=feed_item.season_title, series_title=feed_item.title_canonical, feed=rss_feed)
+                      season_title=feed_item.season_title, series_title=feed_item.title_canonical,
+                      tvdb_id=feed_item.tvdb_id, feed=rss_feed)
         logger.info('Cached RSS URL %s.' % feed_item.url)
 
 
