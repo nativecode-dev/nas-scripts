@@ -1,8 +1,9 @@
 from sqlobject import *
 
 class RssFeedItem(SQLObject):
+    date_published = DateTimeCol(default=None)
     description = StringCol(default=None)
     title = StringCol(length=256)
-    url = StringCol(length=512)
+    url = StringCol(length=512, unique=True)
 
-    rss_feed = ForeignKey('RssFeed')
+    feed = ForeignKey('RssFeed')
