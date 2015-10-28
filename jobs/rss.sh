@@ -1,4 +1,4 @@
 #!/bin/sh
 
-/bin/sh /share/Data/Scripts/jobs/rss-movies.sh
-/bin/sh /share/Data/Scripts/jobs/rss-series.sh
+/bin/sh $(dirname $0)/rss-movies.sh
+/bin/sh $(dirname $0)/rss-series.sh

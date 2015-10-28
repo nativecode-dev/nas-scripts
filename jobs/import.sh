@@ -2,8 +2,8 @@
 
 rm /share/Data/Databases/rssarchiver/*
 
-/bin/sh /share/Data/Scripts/jobs/import-movies.sh
-/bin/sh /share/Data/Scripts/jobs/rss-movies.sh
+/bin/sh $(dirname $0)/import-movies.sh
+/bin/sh $(dirname $0)/rss-movies.sh
 
-/bin/sh /share/Data/Scripts/jobs/import-series.sh
-/bin/sh /share/Data/Scripts/jobs/rss-series.sh
+/bin/sh $(dirname $0)/import-series.sh
+/bin/sh $(dirname $0)/rss-series.sh
