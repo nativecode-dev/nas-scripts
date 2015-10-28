@@ -14,30 +14,56 @@ logger.setLevel(logging.DEBUG)
 
 def run_script():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--schema', dest='schema', default='sqlite:/usr/local/share/rss.db', type=str)
-    parser.add_argument('--type', dest='type', required=True, type=str)
-    parser.add_argument('--url', dest='url', required=True, type=str)
-    parser.add_argument('--logfile', dest='logfile', default='/tmp/rssarchive.log', type=str)
-    parser.add_argument('--logaddress', dest='logaddress', default='/dev/log', type=str)
-    args = parser.parse_args()
+    parser.add_argument('--command')
+    parser.add_argument('--cooldown-retries', dest='cooldown_retries', default=5, type=int)
+    parser.add_argument('--cooldown-seconds', dest='cooldown_seconds', default=0.5, type=float)
+    subparsers = parser.add_subparsers()
 
+    # Import required
+    parser_import = subparsers.add_parser('import', help='import RSS feed for archiving')
+    parser_import.add_argument('--type', dest='type', choices=['movies', 'series'], required=True, type=str)
+    parser_import.add_argument('--url', dest='url', required=True, type=str)
+    parser_import.set_defaults(func=_import)
+
+    # Import optional
+    parser_import.add_argument('--logaddress', dest='logaddress', default='/dev/log', type=str)
+    parser_import.add_argument('--logfile', dest='logfile', default='/tmp/rssarchive.log', type=str)
+    parser_import.add_argument('--schema', dest='schema', default='sqlite:/usr/local/share/rss.db', type=str)
+
+    # Update required
+    parser_update = subparsers.add_parser('update', help='update media information from feeds')
+    parser_update.set_defaults(func=_update)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+def _import(args):
     _initialize_logging(args.logfile, args.logaddress)
     import_feed(args.schema, args.type, args.url)
+
+
+def _update(args):
+    print('Would perform update.')
+    return
 
 
 def import_feed(schema, type, url):
     try:
         _initialize_database(schema)
-        global rss_feed
-        rss_feed = RssFeed.select(RssFeed.q.url==url).getOne(None)
+        feed = RssFeed.select(RssFeed.q.url==url).getOne(None)
 
-        if not rss_feed:
-            rss_feed = RssFeed(type=type.lower(), url=url)
+        if not feed:
+            feed = RssFeed(type=type.lower(), url=url)
 
         if type.lower() == 'movies':
-            importer = MovieFeedImporter(logger, lambda url: _handle_exists(RssMovieItem, url), _handle_movie)
+            importer = MovieFeedImporter(logger,
+                lambda url: _handle_exists(RssMovieItem, url),
+                lambda feed_item: _handle_movie(feed, feed_item))
         elif type.lower() == 'series':
-            importer = SeriesFeedImporter(logger, lambda url: _handle_exists(RssSeriesItem, url), _handle_series)
+            importer = SeriesFeedImporter(logger,
+                lambda url: _handle_exists(RssSeriesItem, url),
+                lambda feed_item: _handle_series(feed, feed_item))
         else:
             logger.info('Could not determine what feed importer to use for %s.' % type)
             sys.exit(1)
@@ -96,31 +122,31 @@ def _handle_exists(type, url):
     return exists
 
 
-def _handle_movie(feed_item):
+def _handle_movie(feed, feed_item):
     imdb_link = ImdbLink.select(ImdbLink.q.imdb_id==feed_item.imdb_id).getOne(None)
     if not imdb_link:
         imdb_link = ImdbLink(title=feed_item.title_canonical, url=feed_item.imdb_url, imdb_id=feed_item.imdb_id)
 
-    rss_feed_item = RssMovieItem.select(RssFeedItem.q.url==feed_item.url).getOne(None)
-    if not rss_feed_item:
+    rss_item = RssMovieItem.select(RssFeedItem.q.url==feed_item.url).getOne(None)
+    if not rss_item:
         RssMovieItem(date_published=feed_item.date_published, description=feed_item.description,
                     title=feed_item.title, url=feed_item.url, imdb_id=feed_item.imdb_id, 
-                    imdb_url=feed_item.imdb_url, feed=rss_feed)
+                    imdb_url=feed_item.imdb_url, feed=feed)
         logger.info('Cached RSS URL %s.' % feed_item.url)
 
 
-def _handle_series(feed_item):
+def _handle_series(feed, feed_item):
     imdb_link = ImdbLink.select(ImdbLink.q.imdb_id==feed_item.imdb_id).getOne(None)
     if not imdb_link and feed_item.imdb_id:
         imdb_link = ImdbLink(title=feed_item.title_canonical, url=feed_item.imdb_url, imdb_id=feed_item.imdb_id)
 
-    item = RssSeriesItem.select(RssFeedItem.q.url==feed_item.url).getOne(None)
-    if not item:
+    rss_item = RssSeriesItem.select(RssFeedItem.q.url==feed_item.url).getOne(None)
+    if not rss_item:
         RssSeriesItem(date_published=feed_item.date_published, description=feed_item.description,
                       title=feed_item.title, url=feed_item.url, episode_number=feed_item.episode_number,
                       episode_title=feed_item.episode_title, season_number=feed_item.season_number,
                       season_title=feed_item.season_title, series_title=feed_item.title_canonical,
-                      tvdb_id=feed_item.tvdb_id, feed=rss_feed)
+                      tvdb_id=feed_item.tvdb_id, feed=feed)
         logger.info('Cached RSS URL %s.' % feed_item.url)
 
 
