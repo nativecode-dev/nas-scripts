@@ -2,5 +2,5 @@ from sqlobject import *
 from sqlobject.inheritance import InheritableSQLObject
 
 class Link(InheritableSQLObject):
-    title = StringCol(length=256)
-    url = StringCol(length=512)
+    title = UnicodeCol(length=256)
+    url = UnicodeCol(length=512)

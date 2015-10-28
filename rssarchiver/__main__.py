@@ -19,28 +19,53 @@ def run_script():
     parser.add_argument('--cooldown-seconds', dest='cooldown_seconds', default=0.5, type=float)
     subparsers = parser.add_subparsers()
 
-    # Import required
-    parser_import = subparsers.add_parser('import', help='import RSS feed for archiving')
-    parser_import.add_argument('--type', dest='type', choices=['movies', 'series'], required=True, type=str)
-    parser_import.add_argument('--url', dest='url', required=True, type=str)
-    parser_import.set_defaults(func=_import)
-
-    # Import optional
-    parser_import.add_argument('--logaddress', dest='logaddress', default='/dev/log', type=str)
-    parser_import.add_argument('--logfile', dest='logfile', default='/tmp/rssarchive.log', type=str)
-    parser_import.add_argument('--schema', dest='schema', default='sqlite:/usr/local/share/rss.db', type=str)
-
-    # Update required
-    parser_update = subparsers.add_parser('update', help='update media information from feeds')
-    parser_update.set_defaults(func=_update)
+    _setup_import_args(subparsers)
+    _setup_search_args(subparsers)
+    _setup_update_args(subparsers)
 
     args = parser.parse_args()
     args.func(args)
 
 
+def _setup_import_args(subparsers):
+    # Import required
+    parser = subparsers.add_parser('import', help='import RSS feed for archiving')
+    parser.add_argument('--type', dest='type', choices=['movies', 'series'], required=True, type=str)
+    parser.add_argument('--url', dest='url', required=True, type=str)
+
+    # Import optional
+    parser.add_argument('--logaddress', dest='logaddress', default='/dev/log', type=str)
+    parser.add_argument('--logfile', dest='logfile', default='/tmp/rssarchive.log', type=str)
+    parser.add_argument('--schema', dest='schema', default='sqlite:/usr/local/share/rss.db', type=str)
+
+    # Set callback
+    parser.set_defaults(func=_import)
+
+
+def _setup_search_args(subparsers):
+    # Import required
+    parser = subparsers.add_parser('search', help='search the database for feed items')
+    parser.add_argument('--type', dest='type', choices=['movies', 'series'], required=True, type=str)
+
+    # Set callback
+    parser.set_defaults(func=_search)
+
+
+def _setup_update_args(subparsers):
+    # Update required
+    parser = subparsers.add_parser('update', help='update media information from feeds')
+
+    # Set callback
+    parser.set_defaults(func=_update)
+
+
 def _import(args):
     _initialize_logging(args.logfile, args.logaddress)
     import_feed(args.schema, args.type, args.url)
+
+
+def _search(args):
+    return
 
 
 def _update(args):
