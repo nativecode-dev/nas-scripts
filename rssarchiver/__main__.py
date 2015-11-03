@@ -9,7 +9,7 @@ import traceback
 from feeds import *
 from sql import *
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('RssArchiver')
 logger.setLevel(logging.DEBUG)
 
 def run_script():

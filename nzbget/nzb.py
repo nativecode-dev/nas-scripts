@@ -639,7 +639,8 @@ def guess_filename(filename):
 def is_video_invalid(filename):
     name, extension = os.path.splitext(filename)
     guess = guess_filename(filename)
-    return guess['title'] == name
+
+    return False if 'title' not in guess else guess['title'] == name
 
 
 def is_video_file(filename):
