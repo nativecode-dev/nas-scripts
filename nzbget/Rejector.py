@@ -296,7 +296,7 @@ def check_disc_image(filename):
     name, extension = os.path.splitext(filename)
 
     if REJECT_DISC_IMAGES == 'All' or REJECT_DISC_IMAGES == 'Image':
-        if extension == in REJECT_DISC_IMAGE_EXTENSIONS:
+        if extension in REJECT_DISC_IMAGE_EXTENSIONS:
             reject('Contains a disc image file (%s).' % filename)
 
     if REJECT_DISC_IMAGES == 'All' or REJECT_DISC_IMAGES == 'Rip':
