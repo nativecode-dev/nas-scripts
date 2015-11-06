@@ -307,15 +307,21 @@ def check_disc_image(filename):
 # Checks if the file is considered part of being fake.
 ##############################################################################
 def check_fake(filename):
+    """
+    Checks if the name or extension is in the FAKE_BLACKLIST collection. If
+    the file has a name or extension that has been blacklisted, the entire
+    NZB is considered a fake.
+    """
     name, extension = os.path.splitext(filename)
 
     if name.lower() in FAKE_WHITELIST or extension.lower() in FAKE_WHITELIST:
         return
 
     blacklisted = name.lower() in FAKE_BLACKLIST or extension.lower() in FAKE_BLACKLIST
-    invalid = False if extension in nzb.MEDIA_EXTENSIONS else nzb.is_video_invalid(filename)
+    # TODO: Don't remember why we had to do this?
+    # invalid = False if extension in nzb.MEDIA_EXTENSIONS else nzb.is_video_invalid(filename)
 
-    if blacklisted or invalid:
+    if blacklisted:
         reject('Contains a file (%s) that appears to indicate a fake.' % filename)
 
 
