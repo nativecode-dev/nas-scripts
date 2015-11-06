@@ -61,6 +61,13 @@
 #
 #RejectDiscImages=All
 
+# List of disc image extensions to ignore.
+#
+# If any of the files contains one of the following comma-separated
+# extensions, the file is considered as a disc image.
+#
+#RejectDiscImageExtensions=.iso,.bdmv,.ifo,.vob
+
 # Enable or disable fake archive validation (Enabled, Disabled).
 #
 # Checks archive files to ensure that they are not fakes seeded to NNTP
@@ -129,6 +136,7 @@ FAKE_BLACKLIST=nzb.get_script_option_list('FakeBlacklist')
 FAKE_WHITELIST=nzb.get_script_option_list('FakeWhitelist')
 REJECT_ACTION=nzb.get_script_option('RejectAction')
 REJECT_DISC_IMAGES=nzb.get_script_option('RejectDiscImages')
+REJECT_DISC_IMAGE_EXTENSIONS=nzb.get_script_option_list('RejectDiscImageExtensions')
 REJECT_FAKES=nzb.get_script_option('RejectFakes')
 REJECT_PASSWORD=nzb.get_script_option('RejectPassword')
 REJECT_PATTERNS=nzb.get_script_option_list('RejectPatterns')
@@ -288,7 +296,7 @@ def check_disc_image(filename):
     name, extension = os.path.splitext(filename)
 
     if REJECT_DISC_IMAGES == 'All' or REJECT_DISC_IMAGES == 'Image':
-        if extension == '.iso':
+        if extension == in REJECT_DISC_IMAGE_EXTENSIONS:
             reject('Contains a disc image file (%s).' % filename)
 
     if REJECT_DISC_IMAGES == 'All' or REJECT_DISC_IMAGES == 'Rip':
