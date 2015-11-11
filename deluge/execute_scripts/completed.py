@@ -20,7 +20,7 @@ def _setup_logging_handlers(logger):
 
     # Console
     handler_console = logging.StreamHandler(stream=sys.stdout)
-    handler_console.setLevel(logging.DEBUG)
+    handler_console.setLevel(logging.INFO)
     logger.addHandler(handler_console)
 
     # SysLog
@@ -33,7 +33,7 @@ def _setup_logging_handlers(logger):
     logfile = '/share/Data/Logs/Deluge/completed.log'
     handler_file = logging.handlers.TimedRotatingFileHandler(logfile, when='midnight')
     handler_file.setFormatter(formatter)
-    handler_file.setLevel(logging.INFO)
+    handler_file.setLevel(logging.DEBUG)
     logger.addHandler(handler_file)
 
 
