@@ -4,4 +4,4 @@
     --schema sqlite:/share/Data/Databases/rssarchiver/rss.db \
     --type series \
     --url http://bit.ly/1tye55k \
-    --logfile /share/Data/Databases/rssarchiver/rss.log
+    --logfile /share/Data/Logs/rssarchiver/rss.log
