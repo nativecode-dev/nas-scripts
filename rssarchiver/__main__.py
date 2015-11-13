@@ -131,7 +131,7 @@ def _initialize_logging(filelog, syslog):
     logger.addHandler(handler_syslog)
 
     # File handler
-    rollover_size = 10240000
+    rollover_size = 102400
     handler_file = logging.handlers.RotatingFileHandler(filename=filelog, maxBytes=rollover_size)
     handler_file.setFormatter(formatter)
     handler_file.setLevel(logging.DEBUG)
