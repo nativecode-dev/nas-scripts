@@ -7,6 +7,7 @@ import sys
 import urllib2
 
 from python_nas.core import conf, http
+from python_nas.notifications import email, pushover
 
 
 # CONSTANTS
@@ -156,32 +157,11 @@ def send_notifications(config, message, url):
         for type in notifiers.keys():
             try:
                 if type == 'email':
-                    send_email(notifiers[type], message)
+                    email.send_multiple(notifiers[type], message)
                 elif type == 'pushover':
-                    send_pushover(notifiers[type], message, url)
+                    pushover.send_multiple(notifiers[type], message, title="Site Monitor (%s)" % url)
             except Exception as e:
                 log.exception(e)
-
-
-def send_email(notifier, message):
-    pass
-
-
-def send_pushover(notifier, message, url):
-    try:
-        from pushover import Client
-    except Exception as e:
-        log.exception(e)
-        log.error("Could not send pushover event. You don't have the package installed.")
-        sys.exit(PROCESS_CATASTROPHIC)
-
-    for name in notifier.keys():
-        log.debug("[pushover:%s] %s" % (name, message))
-
-        apikey = notifier[name]['apikey']
-        clientkey = notifier[name]['clientkey']
-        client = Client(clientkey, api_token=apikey)
-        client.send_message(message, title="Site Monitor (%s)" % url)
 
 
 def modify_connection(args, config):
