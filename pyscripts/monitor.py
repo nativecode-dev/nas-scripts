@@ -84,9 +84,12 @@ def initialize_arguments_check(subparsers):
 
 
 def initialize_arguments_connection(subparsers):
+    help_options = 'Comma-separated list of values or key/value pairs.'
+
     parser = subparsers.add_parser('connection', help='Manage connections to monitor.')
     parser.add_argument('--action', choices=['add', 'remove'], default='add', type=str)
-    parser.add_argument('--type', choices=['interface', 'vpn'], default='interface', type=str)
+    parser.add_argument('--options', required=True, type=str, help=help_options)
+    parser.add_argument('--type', choices=['interface', 'ipmatch', 'vpn'], default='interface', type=str)
     parser.set_defaults(func=modify_connection)
 
 
@@ -124,6 +127,11 @@ def perform_check_connections(args, config):
     if not 'connections' in config:
         log.warning("No connections have been configured.")
         sys.exit(PROCESS_WARNING)
+
+    connections = config['connections']
+
+    for connection in connections:
+        pass
 
 
 def perform_check_sites(args, config):
