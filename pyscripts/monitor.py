@@ -54,7 +54,8 @@ def create_syslog_logger():
 def initialize_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--command')
-    parser.add_argument('--verbose', default=True, type=bool)
+    parser.add_argument('--debug', default=False, type=bool)
+    parser.add_argument('--verbose', default=False, type=bool)
     subparsers = parser.add_subparsers()
 
     # Define subcommand for checking configured sites.
@@ -128,7 +129,7 @@ def perform_checks(args, config):
 def perform_check_connections(args, config):
     if not 'connections' in config:
         log.warning("No connections have been configured.")
-        sys.exit(PROCESS_WARNING)
+        return
 
     connections = config['connections']
 
@@ -139,7 +140,7 @@ def perform_check_connections(args, config):
 def perform_check_sites(args, config):
     if not 'sites' in config:
         log.warning("No sites have been configured.")
-        sys.exit(PROCESS_WARNING)
+        return
 
     sites = config['sites']
 
@@ -151,7 +152,7 @@ def perform_check_sites(args, config):
                 response = http.get(url)
             elif site['auth'] == 'basic':
                 headers = http.get_basic_auth_header(site['username'], site['password'])
-                response = http.get(url)
+                response = http.get(url, headers)
 
             if response and response.code == 200 and args.verbose:
                 log.info("Site %s returned a 200 OK status." % url)
@@ -176,7 +177,7 @@ def send_notifications(config, message, url):
 
 def modify_connection(args, config):
     connections = {} if not 'connections' in config else config['connections']
-    pass
+    conf.write_json(CONFIG_NAME, config)
 
 
 def modify_notification(args, config):
@@ -196,6 +197,8 @@ def modify_notification(args, config):
             elif args.type == 'pushover':
                 conf.dict_remove(notifier, args.options)
 
+    conf.write_json(CONFIG_NAME, config)
+
 
 def modify_site(args, config):
     sites = {} if not 'sites' in config else config['sites']
@@ -207,11 +210,12 @@ def modify_site(args, config):
         site['password'] = args.password
 
         log.info("Added or updated site %s." % args.url)
-        conf.write_json(CONFIG_NAME, config)
     elif args.action == 'remove':
         if args.url in sites:
             del sites[args.url]
             log.info("Removed site %s." % args.url)
+
+    conf.write_json(CONFIG_NAME, config)
 
 
 if __name__ == '__main__':
