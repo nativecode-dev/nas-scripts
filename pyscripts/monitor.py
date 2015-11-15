@@ -1,12 +1,16 @@
+#!/usr/bin/env python
+
 # IMPORTS
 # -----------------------------------------------------------------------------
 import argparse
+import json
 import logging
 import logging.handlers
 import sys
 import urllib2
 
 from python_nas.core import conf, http
+from python_nas.notifications import email, pushover
 
 
 # CONSTANTS
@@ -32,7 +36,7 @@ def main():
 
 def initialize_loggers():
     global log
-    log = logging.Logger('sitemonitor')
+    log = logging.Logger('monitor')
     create_console_logger()
     create_syslog_logger()
 
@@ -45,17 +49,22 @@ def create_console_logger():
 
 def create_syslog_logger():
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    pass
+    syslog = logging.handlers.SysLogHandler(address='/dev/log')
+    syslog.setLevel(logging.ERROR)
+    syslog.setFormatter(formatter)
+    log.addHandler(syslog)
 
 
 def initialize_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--command')
-    parser.add_argument('--verbose', default=True, type=bool)
     subparsers = parser.add_subparsers()
 
     # Define subcommand for checking configured sites.
     initialize_arguments_check(subparsers)
+
+    # Define subcommand for showing configuration options.
+    initialize_arguments_config(subparsers)
 
     # Define subcommand for checking connections.
     initialize_arguments_connection(subparsers)
@@ -82,10 +91,18 @@ def initialize_arguments_check(subparsers):
     parser.set_defaults(func=perform_checks)
 
 
+def initialize_arguments_config(subparsers):
+    parser = subparsers.add_parser('config', help='Show configuration options.')
+    parser.set_defaults(func=show_config)
+
+
 def initialize_arguments_connection(subparsers):
+    help_options = 'Comma-separated list of values or key/value pairs.'
+
     parser = subparsers.add_parser('connection', help='Manage connections to monitor.')
     parser.add_argument('--action', choices=['add', 'remove'], default='add', type=str)
-    parser.add_argument('--type', choices=['interface', 'vpn'], default='interface', type=str)
+    parser.add_argument('--options', required=True, type=str, help=help_options)
+    parser.add_argument('--type', choices=['interface', 'ipmatch', 'vpn'], default='interface', type=str)
     parser.set_defaults(func=modify_connection)
 
 
@@ -122,17 +139,23 @@ def perform_checks(args, config):
 def perform_check_connections(args, config):
     if not 'connections' in config:
         log.warning("No connections have been configured.")
-        sys.exit(PROCESS_WARNING)
+        return
+
+    connections = config['connections']
+
+    for connection in connections:
+        pass
 
 
 def perform_check_sites(args, config):
     if not 'sites' in config:
         log.warning("No sites have been configured.")
-        sys.exit(PROCESS_WARNING)
+        return
 
     sites = config['sites']
 
     for url in sites:
+        log.info("Checking site '%s'." % url)
         site = sites[url]
 
         try:
@@ -140,12 +163,13 @@ def perform_check_sites(args, config):
                 response = http.get(url)
             elif site['auth'] == 'basic':
                 headers = http.get_basic_auth_header(site['username'], site['password'])
-                response = http.get(url)
+                response = http.get(url, headers)
 
-            if response and response.code == 200 and args.verbose:
+            if response and response.code == 200:
                 log.info("Site %s returned a 200 OK status." % url)
         except urllib2.HTTPError as e:
             message = "Site %s returned a '%s (%s)' status." % (url, e.reason, e.code)
+            log.debug(message)
             send_notifications(config, message, url)
 
 
@@ -154,39 +178,19 @@ def send_notifications(config, message, url):
 
     if notifiers:
         for type in notifiers.keys():
+            log.info("Sending notification via %s." % type)
             try:
                 if type == 'email':
-                    send_email(notifiers[type], message)
+                    email.send_multiple(notifiers[type], message)
                 elif type == 'pushover':
-                    send_pushover(notifiers[type], message, url)
+                    pushover.send_multiple(notifiers[type], message, title="Site Monitor (%s)" % url)
             except Exception as e:
                 log.exception(e)
 
 
-def send_email(notifier, message):
-    pass
-
-
-def send_pushover(notifier, message, url):
-    try:
-        from pushover import Client
-    except Exception as e:
-        log.exception(e)
-        log.error("Could not send pushover event. You don't have the package installed.")
-        sys.exit(PROCESS_CATASTROPHIC)
-
-    for name in notifier.keys():
-        log.debug("[pushover:%s] %s" % (name, message))
-
-        apikey = notifier[name]['apikey']
-        clientkey = notifier[name]['clientkey']
-        client = Client(clientkey, api_token=apikey)
-        client.send_message(message, title="Site Monitor (%s)" % url)
-
-
 def modify_connection(args, config):
     connections = {} if not 'connections' in config else config['connections']
-    pass
+    conf.write_json(CONFIG_NAME, config)
 
 
 def modify_notification(args, config):
@@ -196,15 +200,21 @@ def modify_notification(args, config):
         notifier = notifiers[args.type] = {} if not args.type in notifiers else notifiers[args.type]
         if args.type == 'email':
             conf.list_add(notifier, 'recipients', conf.list_split(args.options))
+            log.info("Added email recipients %s." % args.options)
         elif args.type == 'pushover':
             conf.dict_addstring(notifier, args.options, ['apikey', 'clientkey'])
+            log.info("Added pushover options %s." % args.options)
     elif args.action == 'remove':
         if args.type in notifiers:
             notifier = notifiers[args.type]
             if args.type == 'email':
                 conf.list_remove(notifier, 'recipients', conf.list_split(args.options))
+                log.info("Removed email recipients %s." % args.options)
             elif args.type == 'pushover':
                 conf.dict_remove(notifier, args.options)
+                log.info("Removed pushover channel %s." % args.options)
+
+    conf.write_json(CONFIG_NAME, config)
 
 
 def modify_site(args, config):
@@ -217,11 +227,16 @@ def modify_site(args, config):
         site['password'] = args.password
 
         log.info("Added or updated site %s." % args.url)
-        conf.write_json(CONFIG_NAME, config)
     elif args.action == 'remove':
         if args.url in sites:
             del sites[args.url]
             log.info("Removed site %s." % args.url)
+
+    conf.write_json(CONFIG_NAME, config)
+
+
+def show_config(args, config):
+    print(json.dumps(config, sort_keys=True, indent=2, separators=(',', ': ')))
 
 
 if __name__ == '__main__':
