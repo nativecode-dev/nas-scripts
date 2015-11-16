@@ -16,6 +16,14 @@ class NetInterface(dict):
     __delattr__ = dict.__delitem__
 
 
+def exists(name):
+    try:
+        get_ifconfig(name)
+        return True
+    except Exception:
+        return False
+
+
 def get_ifconfig(name=None):
     command = ['ifconfig']
     if name: command.append(name)
