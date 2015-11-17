@@ -81,3 +81,12 @@ def get_public_address(type='ipv4'):
         raise Exception("Type must be either 'ipv4' or 'ipv6'.")
 
     return urllib2.urlopen('http://%s.icanhazip.com' % type).read().replace('\n', '')
+
+
+def can_ping(address, type='ipv4'):
+    iptype = '-4' if type == 'ipv4' else '-6'
+    command = ['ping', '-c', '1', iptype, address]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    response, error = process.communicate()
+
+    return not error
