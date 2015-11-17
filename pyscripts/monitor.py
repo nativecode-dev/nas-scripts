@@ -18,7 +18,7 @@ from python_nas.notifications import email, pushover
 # ENUMERATIONS
 # -----------------------------------------------------------------------------
 ENUM_ACTIONS=Enum({'add': 0, 'remove': 1})
-ENUM_CONNECTIONS=Enum({'interface': 0})
+ENUM_CONNECTIONS=Enum({'interface': 0, 'ping': 1})
 ENUM_MONITORS=Enum({'all': 0, 'connections': 1, 'notifiers': 1, 'sites': 2})
 ENUM_NOTIFIERS=Enum({'email': 0, 'pushover': 1})
 ENUM_RULES=Enum({'exists': 0, 'not_exists': 1})
@@ -166,12 +166,16 @@ def perform_check_connections(args, config):
             if connection_type == 'interface':
                 interface = connections[connection_type]
                 perform_check_connections_interface(args, config, interface)
+            elif cnnection_type == 'ping':
+                pings = connections[connection_type]
+                perform_check_connections_ping(args, config, pings)
         except Exception as e:
             log.exception(e)
 
 
 def perform_check_connections_interface(args, config, interface):
     for device_key in interface.keys():
+        log.info("Checking connection %s." % device_key)
         device = interface[device_key]
         rule = device['rule']
         if rule == 'exists':
@@ -179,10 +183,16 @@ def perform_check_connections_interface(args, config, interface):
                 message = "Device %s does not exist." % device_key
                 log.info(message)
                 send_notifications(config, message, device_key)
+            else:
+                log.info("Connection %s is active." % device_key)
         elif rule == 'not_exists':
             if interfaces.exists(device_key):
                 message = "Device %s exists" % device_key
                 send_notifications(config, message, device_key)
+
+
+def perform_check_connections_ping(args, config, ping):
+    pass
 
 
 def perform_check_sites(args, config):
@@ -204,7 +214,7 @@ def perform_check_sites(args, config):
                 response = http.get(url, headers)
 
             if response and response.code == 200:
-                log.info("Site %s returned a 200 OK status." % url)
+                log.info("Site '%s' returned a '200 OK' status." % url)
         except urllib2.HTTPError as e:
             log.error(e)
             message = "Site %s returned a '%s (%s)' status." % (url, e.reason, e.code)
