@@ -4,9 +4,9 @@ import os
 import re
 
 REGEX_FILENAME=re.compile('(.*)\s(\(\d{4}\)).*')
+EXTENSIONS=['.avi', '.m4v', '.mkv', '.mov', '.mp2', '.mp4', '.mpeg', '.mpg', '.mpv', '.webm', '.wmv']
 
 def main():
-    extensions = ['.avi', '.mkv', '.mp4', '.wmv', '.mpeg', '.mpg', '.m4v']
     root = '/share/Media/Movies'
 
     for dir_path, dir_names, dir_files in os.walk(root):
@@ -14,23 +14,29 @@ def main():
             file_name, file_extension = os.path.splitext(dir_file)
             file_original = os.path.join(dir_path, dir_file)
 
-            if file_extension in extensions:
-                match = REGEX_FILENAME.match(file_name)
-
-                if not match:
-                    continue
-
-                title = match.group(1)
-                year = match.group(2)
-
-                file_renamed = os.path.join(dir_path, "%s %s%s" % (title, year, file_extension))
-
-                if file_original != file_renamed:
-                    os.rename(file_original, file_renamed)
-                    print "[RENAME] %s -> %s" % (file_original, file_renamed)
+            if file_extension in EXTENSIONS:
+                _rename(file_original, dir_path, file_name, file_extension)
             else:
-                os.remove(file_original)
-                print "[DELETE] %s" % file_original
+                _delete(file_original)
+
+
+def _rename(original, dir_path, file_name, file_extension):
+    match = REGEX_FILENAME.match(file_name)
+
+    if match:
+        title = match.group(1)
+        year = match.group(2)
+
+        renamed = os.path.join(dir_path, "%s %s%s" % (title, year, file_extension))
+
+        if original != renamed:
+            os.rename(original, renamed)
+            print "[RENAME] %s -> %s" % (original, renamed)
+
+
+def _delete(filename):
+    os.remove(filename)
+    print "[DELETE] %s" % filename
 
 
 main()
