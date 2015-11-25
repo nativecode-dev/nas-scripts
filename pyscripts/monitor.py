@@ -166,7 +166,7 @@ def perform_check_connections(args, config):
             if connection_type == 'interface':
                 interface = connections[connection_type]
                 perform_check_connections_interface(args, config, interface)
-            elif cnnection_type == 'ping':
+            elif connection_type == 'ping':
                 pings = connections[connection_type]
                 perform_check_connections_ping(args, config, pings)
         except Exception as e:
@@ -192,7 +192,22 @@ def perform_check_connections_interface(args, config, interface):
 
 
 def perform_check_connections_ping(args, config, ping):
-    pass
+    for host in ping.keys():
+        log.info("Checking ping to %s." % host)
+        rule = ping[host]['rule']
+
+        if rule == 'exists':
+            if not interfaces.can_ping(host):
+                message = "Can't ping host %s." % host
+                send_notifications(config, message, host)
+            else:
+                message = "Was able to ping %s." % host
+        elif rule == 'not_exists':
+            if interfaces.can_ping(host):
+                message = "Can ping host %s." % host
+                send_notifications(config, message, host)
+
+        log.info(message)
 
 
 def perform_check_sites(args, config):
@@ -341,6 +356,10 @@ def show_config_connections(section):
             for value in sorted(connection.keys()):
                 rule = connection[value]['rule']
                 log.info("\t[INTERFACE] %s : %s" % (value, rule))
+        elif connection_type == 'ping':
+            for value in sorted(connection.keys()):
+                rule = connection[value]['rule']
+                log.info("\t[PING] %s : %s" % (value, rule))
 
 
 def show_config_notifiers(section):
