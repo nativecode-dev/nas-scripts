@@ -174,7 +174,7 @@ def perform_check_connections(args, config):
 
 
 def perform_check_connections_interface(args, config, interface):
-    for device_key in interface.keys():
+    for device_key in sorted(interface.keys()):
         log.info("Checking connection %s." % device_key)
         device = interface[device_key]
         rule = device['rule']
@@ -192,7 +192,7 @@ def perform_check_connections_interface(args, config, interface):
 
 
 def perform_check_connections_ping(args, config, ping):
-    for host in ping.keys():
+    for host in sorted(ping.keys()):
         log.info("Checking ping to %s." % host)
         rule = ping[host]['rule']
 
@@ -217,7 +217,7 @@ def perform_check_sites(args, config):
 
     sites = config['sites']
 
-    for url in sites:
+    for url in sorted(sites.keys()):
         log.info("Checking site '%s'." % url)
         site = sites[url]
 
