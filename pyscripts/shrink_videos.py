@@ -8,8 +8,7 @@ import logging.handlers
 import os
 import sys
 
-
-EXTENSIONS=['.avi', '.mkv', '.mov', '.mpg', '.mpeg', '.mp4', '.mv4']
+from python_nas.core import utils
 
 
 class Options(object):

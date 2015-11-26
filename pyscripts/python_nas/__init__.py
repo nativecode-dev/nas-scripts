@@ -2,6 +2,10 @@ import core
 import networking
 import notifications
 
+from media import media
+from media import MediaInfo
+from media import MediaFile
+
 class Enum(dict):
     __getattr__ = dict.__getitem__
     __setattr__ = dict.__setitem__
