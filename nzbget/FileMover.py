@@ -95,7 +95,7 @@ def on_post_processing():
     category = nzb.get_nzb_category()
     target = get_category_path(category)
 
-    if os.path.isdir(directory):
+    if os.path.isdir(directory) and target:
         # We need to move the files, delete the directory, and hide the NZB
         # from history.
         file = get_largest_file(category, directory, target)
