@@ -38,18 +38,18 @@
 # Allows global execution of the script to be disabled without removing the
 # script from various events.
 #
-#ScriptState=Enabled
+# ScriptState=Enabled
 
 # Sets the max age of a file before considering it a lost cause (hours).
 #
 # NOTE: Default is an extremely conservative value.
 #
-#AgeLimit=12
+# AgeLimit=12
 
 # Sets the number of times it will attempt to requeue the file before
 # giving up (count).
 #
-#RetryLimit=10
+# RetryLimit=10
 
 # Sets the amount of time to multiple each retry before trying to unpause
 # the file and resume (minutes).
@@ -58,7 +58,7 @@
 # wait 10 (default) minutes. Each subsequent retry will be (X * count);
 # so for example, the third retry will wait 30 minutes before resuming.
 #
-#RetryMinutes=10
+# RetryMinutes=10
 
 ### NZBGET SCHEDULER/POST-PROCESSING SCRIPT                                ###
 ##############################################################################
@@ -77,11 +77,11 @@ import traceback
 
 # Options
 ##############################################################################
-SCRIPT_STATE=nzb.get_script_option('ScriptState')
-SCRIPT_NAME='HealthCheck'
-AGE_LIMIT=int(nzb.get_script_option('AgeLimit'))
-RETRY_LIMIT=int(nzb.get_script_option('RetryLimit'))
-RETRY_MINUTES=int(nzb.get_script_option('RetryMinutes'))
+SCRIPT_STATE = nzb.get_script_option('ScriptState')
+SCRIPT_NAME = 'HealthCheck'
+AGE_LIMIT = int(nzb.get_script_option('AgeLimit'))
+RETRY_LIMIT = int(nzb.get_script_option('RetryLimit'))
+RETRY_MINUTES = int(nzb.get_script_option('RetryMinutes'))
 
 
 # Handles post-processing of the NZB file.
@@ -100,7 +100,8 @@ def on_post_processing():
         nzbid = nzb.get_nzb_id()
         nzbname = nzb.get_nzb_name()
 
-        nzb.log_detail('Performing health check on %s (%s).' % (nzbname, status))
+        nzb.log_detail('Performing health check on %s (%s).' %
+                       (nzbname, status))
 
         check_limit_age(nzbid, nzbname)
         check_limit_retries(nzbid, nzbname)
@@ -140,7 +141,7 @@ def on_scheduled():
         update_filepath = get_update_filepath(nzbid)
 
         # Look at the next group if we couldn't find it here.
-        if not os.path.isfile(update_filepath): 
+        if not os.path.isfile(update_filepath):
             continue
 
         nzb.log_detail('Found state file at %s.' % update_filepath)
@@ -154,12 +155,14 @@ def on_scheduled():
 
         # If the wait time has elapsed, we need to unpause the file.
         if elapsed_minutes >= wait_minutes:
-            nzb.log_detail('Resuming download for %s (%s).' % (state_nzbname, nzbid))
+            nzb.log_detail('Resuming download for %s (%s).' %
+                           (state_nzbname, nzbid))
             if not nzb.proxy().editqueue('GroupResume', 0, '', [nzbid]):
                 reason = 'Failed to resume %s (%s).' % (state_nzbname, nzbid)
                 nzb.exit(nzb.PROCESS_FAIL_PROXY, reason)
         else:
-            nzb.log_detail('Waiting for %s minutes, %s minutes elapsed.' % (wait_minutes, elapsed_minutes))
+            nzb.log_detail('Waiting for %s minutes, %s minutes elapsed.' % (
+                wait_minutes, elapsed_minutes))
 
 
 # Checks if the file is likely to already have been propagated.
@@ -174,7 +177,8 @@ def check_limit_age(nzbid, nzbname):
     nzbage_hours = int(nzbage / 60)
     if nzbage > AGE_LIMIT:
         clean_up()
-        reason = 'File %s is %s hours old, but limit was %s.' % (nzbname, nzbage_hours, AGE_LIMIT)
+        reason = 'File %s is %s hours old, but limit was %s.' % (
+            nzbname, nzbage_hours, AGE_LIMIT)
         nzb.exit(nzb.PROCESS_SUCCESS, reason)
 
 
@@ -193,7 +197,8 @@ def check_limit_retries(nzbid, nzbname):
     # If we already reached the limit, we'll bail.
     if retries >= RETRY_LIMIT:
         clean_up()
-        reason = 'Number of retries has been reached (%s) for %s (%s).' % (retries, nzbid, nzbname)
+        reason = 'Number of retries has been reached (%s) for %s (%s).' % (
+            retries, nzbid, nzbname)
         nzb.exit(nzb.PROCESS_SUCCESS)
 
 
@@ -204,7 +209,8 @@ def update_state(nzbid, nzbname):
     timestamp = int(time.mktime(datetime.datetime.utcnow().timetuple()))
 
     if not os.path.exists(filepath):
-        state = { 'nzbid' : nzbid, 'nzbname' : nzbname, 'retries' : 1, 'lastcheck' : timestamp }
+        state = {'nzbid': nzbid, 'nzbname': nzbname,
+                 'retries': 1, 'lastcheck': timestamp}
     else:
         state = json.load(open(filepath, 'r'))
         retries = int(state['retries'])

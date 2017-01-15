@@ -51,7 +51,7 @@
 # Allows global execution of the script to be disabled without removing the
 # script from various events.
 #
-#ScriptState=Enabled
+# ScriptState=Enabled
 
 # Determine which type(s) of disc images should be rejected
 # (All, Image, Rip, Disabled).
@@ -59,33 +59,33 @@
 # If the largest file that ends in .iso or .img appears to be a disc image,
 # the archive is rejected based on the RejectAction.
 #
-#RejectDiscImages=All
+# RejectDiscImages=All
 
 # List of disc image extensions to ignore.
 #
 # If any of the files contains one of the following comma-separated
 # extensions, the file is considered as a disc image.
 #
-#RejectDiscImageExtensions=.iso,.bdmv,.ifo,.vob
+# RejectDiscImageExtensions=.iso,.bdmv,.ifo,.vob
 
 # Enable or disable fake archive validation (Enabled, Disabled).
 #
 # Checks archive files to ensure that they are not fakes seeded to NNTP
 # servers.
 #
-#RejectFakes=Enabled
+# RejectFakes=Enabled
 
 # Enable or disable password-protected achives (Enabled, Disabled).
 #
 # Performs a check on archives by checking if a password is required.
 #
-#RejectPassword=Enabled
+# RejectPassword=Enabled
 
 # Specifies a regex pattern to use when file matching.
 #
 # You can specify multiple regular expressions by separating them with
 # a comma and double-quoting each expression.
-#RejectPatterns=
+# RejectPatterns=
 
 # Determines action to take when an archive is rejected (Pause, Fail, Bad).
 #
@@ -93,7 +93,7 @@
 # and other systems that don't understand NZB's marked as Bad. You can also
 # set to Pause in order to perform a manual action.
 #
-#RejectAction=Fail
+# RejectAction=Fail
 
 # List of black-listed strings that potentially indicate the archive
 # is a fake.
@@ -103,7 +103,7 @@
 #
 # NOTE: All strings should be lowercase.
 #
-#FakeBlacklist=.exe,.bat,.sh
+# FakeBlacklist=.exe,.bat,.sh
 
 # List of white-listed strings that should be excluded from checking.
 #
@@ -112,7 +112,7 @@
 #
 # NOTE: All strings should be lowercase.
 #
-#FakeWhitelist=rename
+# FakeWhitelist=rename
 
 ### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
 ##############################################################################
@@ -131,21 +131,22 @@ import traceback
 
 # Options
 ##############################################################################
-SCRIPT_STATE=nzb.get_script_option('ScriptState')
-FAKE_BLACKLIST=nzb.get_script_option_list('FakeBlacklist')
-FAKE_WHITELIST=nzb.get_script_option_list('FakeWhitelist')
-REJECT_ACTION=nzb.get_script_option('RejectAction')
-REJECT_DISC_IMAGES=nzb.get_script_option('RejectDiscImages')
-REJECT_DISC_IMAGE_EXTENSIONS=nzb.get_script_option_list('RejectDiscImageExtensions')
-REJECT_FAKES=nzb.get_script_option('RejectFakes')
-REJECT_PASSWORD=nzb.get_script_option('RejectPassword')
-REJECT_PATTERNS=nzb.get_script_option_list('RejectPatterns')
+SCRIPT_STATE = nzb.get_script_option('ScriptState')
+FAKE_BLACKLIST = nzb.get_script_option_list('FakeBlacklist')
+FAKE_WHITELIST = nzb.get_script_option_list('FakeWhitelist')
+REJECT_ACTION = nzb.get_script_option('RejectAction')
+REJECT_DISC_IMAGES = nzb.get_script_option('RejectDiscImages')
+REJECT_DISC_IMAGE_EXTENSIONS = nzb.get_script_option_list(
+    'RejectDiscImageExtensions')
+REJECT_FAKES = nzb.get_script_option('RejectFakes')
+REJECT_PASSWORD = nzb.get_script_option('RejectPassword')
+REJECT_PATTERNS = nzb.get_script_option_list('RejectPatterns')
 
 
 # Constants
 ##############################################################################
-SCRIPT_NAME='Rejector'
-LOCK_FILELIST='RejectorFileList'
+SCRIPT_NAME = 'Rejector'
+LOCK_FILELIST = 'RejectorFileList'
 
 
 # Handles when a file from the NZB has completed downloading.
@@ -200,7 +201,8 @@ def reorder_queued_items(nzbid):
     # If we found RAR files, we need to sort so that the last RAR file is the first
     # item in the list.
     if files:
-        files_sorted = sorted(files, key=operator.itemgetter('number'), reverse=True)
+        files_sorted = sorted(
+            files, key=operator.itemgetter('number'), reverse=True)
         filename = files_sorted[0]['filename']
         fileid = int(files_sorted[0]['fileid'])
 

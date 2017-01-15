@@ -35,17 +35,17 @@
 # Allows global execution of the script to be disabled without removing the
 # script from various events.
 #
-#ScriptState=Enabled
+# ScriptState=Enabled
 
 # Enable or disable logging of environment keys (Disabled, Keys, Pairs).
 #
 # Turns writing to the info log the keys for environment variables.
-#ScriptOutput=Disabled
+# ScriptOutput=Disabled
 
 # Filters environment variables based on prefix.
 #
 # Comma-separated list of environment prefixes to check.
-#PrefixFilters=NZBNA,NZBNP,NZBOP,NZBPO,NZBPP,NZBPR
+# PrefixFilters=NZBNA,NZBNP,NZBOP,NZBPO,NZBPP,NZBPR
 
 ### NZBGET SCHEDULER/FEED/SCAN/QUEUE/POST-PROCESSING SCRIPT                ###
 ##############################################################################
@@ -53,21 +53,20 @@
 
 # Imports
 ##############################################################################
-import nzb
 import os
-import sys
 import traceback
+import nzb
 
 # Options
 ##############################################################################
-SCRIPT_STATE=nzb.get_script_option('ScriptState')
-SCRIPT_OUTPUT=nzb.get_script_option('ScriptOutput')
-PREFIX_FILTERS=nzb.get_script_option('PrefixFilters').strip().split(',')
+SCRIPT_STATE = nzb.get_script_option('ScriptState')
+SCRIPT_OUTPUT = nzb.get_script_option('ScriptOutput')
+PREFIX_FILTERS = nzb.get_script_option('PrefixFilters').strip().split(',')
 
 
 # Constants
 ##############################################################################
-IGNORED_KEYS=['NZBPR_CnpNZBFileName']
+IGNORED_KEYS = ['NZBPR_CnpNZBFileName']
 
 
 # Handle scheduled
@@ -78,6 +77,8 @@ def on_scheduled():
 
 # Handle NZB added
 ##############################################################################
+
+
 def on_nzb_added():
     log_environment()
     return
