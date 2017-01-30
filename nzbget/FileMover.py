@@ -91,8 +91,8 @@ def on_scheduled():
 # Handle post processing
 ##############################################################################
 def on_post_processing():
-    directory = nzb.get_nzb_directory()
     category = nzb.get_nzb_category()
+    directory = nzb.get_nzb_directory()
     target = get_category_path(category)
 
     if os.path.isdir(directory) and target:
@@ -194,8 +194,8 @@ def main():
         # Check version of NZBGet to make sure we can run.
         nzb.check_nzb_version(13.0)
 
-        # Wire up your event handlers before the call.
-        # User the form nzb.set_handler(<event>, <function>)
+        # Wire event handlers before the call.
+        # Use the form nzb.set_handler(<event>, <function>)
         nzb.set_handler('POST_PROCESSING', on_post_processing)
         nzb.set_handler('SCHEDULED', on_scheduled)
 
