@@ -18,7 +18,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-##############################################################################
+###############################################################################
 #
 # Some of the code has been inspired and/or lifted from other scripts written
 # by talented individuals.
@@ -27,11 +27,11 @@
 #   FakeDetector: https://github.com/nzbget/FakeDetector
 #   Completion: http://forum.nzbget.net/viewtopic.php?f=8&t=1736
 #
-##############################################################################
+###############################################################################
 
 
-##############################################################################
-### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
+###############################################################################
+### NZBGET QUEUE/POST-PROCESSING SCRIPT                                     ###
 
 #
 # Inspects RAR archives to protect against downloading unwanted files.
@@ -43,8 +43,8 @@
 # NOTE: This script requires Python 2.7 to be installed on your system.
 #
 
-##############################################################################
-### OPTIONS                                                                ###
+###############################################################################
+### OPTIONS                                                                 ###
 
 # Enable or disable the script from executing (Enabled, Disabled, Debug).
 #
@@ -66,7 +66,7 @@
 # If any of the files contains one of the following comma-separated
 # extensions, the file is considered as a disc image.
 #
-# RejectDiscImageExtensions=.iso,.bdmv,.ifo,.vob
+# RejectImageExtensions=.iso,.bdmv,.ifo,.vob
 
 # Enable or disable fake archive validation (Enabled, Disabled).
 #
@@ -114,12 +114,12 @@
 #
 # FakeWhitelist=rename
 
-### NZBGET QUEUE/POST-PROCESSING SCRIPT                                    ###
-##############################################################################
+### NZBGET QUEUE/POST-PROCESSING SCRIPT                                     ###
+###############################################################################
 
 
 # Imports
-##############################################################################
+###############################################################################
 import nzb
 import operator
 import os
@@ -130,27 +130,26 @@ import traceback
 
 
 # Options
-##############################################################################
+###############################################################################
 SCRIPT_STATE = nzb.get_script_option('ScriptState')
 FAKE_BLACKLIST = nzb.get_script_option_list('FakeBlacklist')
 FAKE_WHITELIST = nzb.get_script_option_list('FakeWhitelist')
 REJECT_ACTION = nzb.get_script_option('RejectAction')
-REJECT_DISC_IMAGES = nzb.get_script_option('RejectDiscImages')
-REJECT_DISC_IMAGE_EXTENSIONS = nzb.get_script_option_list(
-    'RejectDiscImageExtensions')
+REJECT_IMAGES = nzb.get_script_option('RejectDiscImages')
+REJECT_IMAGE_EXTENSIONS = nzb.get_script_option_list('RejectImageExtensions')
 REJECT_FAKES = nzb.get_script_option('RejectFakes')
 REJECT_PASSWORD = nzb.get_script_option('RejectPassword')
 REJECT_PATTERNS = nzb.get_script_option_list('RejectPatterns')
 
 
 # Constants
-##############################################################################
+###############################################################################
 SCRIPT_NAME = 'Rejector'
 LOCK_FILELIST = 'RejectorFileList'
 
 
 # Handles when a file from the NZB has completed downloading.
-##############################################################################
+###############################################################################
 def on_file_downloaded():
     nzbid = nzb.get_nzb_id()
 
@@ -159,7 +158,7 @@ def on_file_downloaded():
 
 
 # Handles when an NZB is added to the queue.
-##############################################################################
+###############################################################################
 def on_nzb_added():
     # Clean up any previous runs.
     clean_up()
@@ -173,7 +172,7 @@ def on_nzb_added():
 
 
 # Handles when an NZB is finished downloading all files.
-##############################################################################
+###############################################################################
 def on_nzb_downloaded():
     if nzb.lock_exists(SCRIPT_NAME):
         # Only clean up once we're done downloading.
@@ -181,7 +180,7 @@ def on_nzb_downloaded():
 
 
 # Moves the last RAR file to the top of the queue list.
-##############################################################################
+###############################################################################
 def reorder_queued_items(nzbid):
     """
     Finds the last part of the RAR archive and moves to the top of the queue.
@@ -216,7 +215,7 @@ def reorder_queued_items(nzbid):
 
 
 # Updates the cached filelist on disk.
-##############################################################################
+###############################################################################
 def update_filelist(nzbid):
     # If a lock already exists in updating the cache file, bail out.
     if nzb.lock_exists(LOCK_FILELIST):
@@ -251,7 +250,7 @@ def update_filelist(nzbid):
 
 
 # Gets the full path to the cache file.
-##############################################################################
+###############################################################################
 def get_cache_filepath(name):
     tempdir = get_temp_path()
     filename = 'cached-%s.filelist' % name
@@ -260,7 +259,7 @@ def get_cache_filepath(name):
 
 
 # Processes a file that has been downloaded.
-##############################################################################
+###############################################################################
 def process_download(directory, filename):
     if not os.path.isdir(directory):
         nzb.log_warning('Directory %s does not appear valid.' % directory)
@@ -278,11 +277,11 @@ def process_download(directory, filename):
 
 
 # Inspects the specified file from inside a RAR archive.
-##############################################################################
+###############################################################################
 def inspect_rar_content(directory, filename):
     nzb.log_detail('Checking RAR content file %s.' % filename)
 
-    if REJECT_DISC_IMAGES != 'Disabled':
+    if REJECT_IMAGES != 'Disabled':
         check_disc_image(filename)
 
     if REJECT_FAKES != 'Disabled':
@@ -293,21 +292,21 @@ def inspect_rar_content(directory, filename):
 
 
 # Checks if the file looks like a disc image.
-##############################################################################
+###############################################################################
 def check_disc_image(filename):
     name, extension = os.path.splitext(filename)
 
-    if REJECT_DISC_IMAGES == 'All' or REJECT_DISC_IMAGES == 'Image':
-        if extension in REJECT_DISC_IMAGE_EXTENSIONS:
+    if REJECT_IMAGES == 'All' or REJECT_IMAGES == 'Image':
+        if extension in REJECT_IMAGE_EXTENSIONS:
             reject('Contains a disc image file (%s).' % filename)
 
-    if REJECT_DISC_IMAGES == 'All' or REJECT_DISC_IMAGES == 'Rip':
+    if REJECT_IMAGES == 'All' or REJECT_IMAGES == 'Rip':
         if extension == '.vob' or extension == '.ifo':
             reject('Contains a file (%s) indicating it was a rip.' % filename)
 
 
 # Checks if the file is considered part of being fake.
-##############################################################################
+###############################################################################
 def check_fake(filename):
     """
     Checks if the name or extension is in the FAKE_BLACKLIST collection. If
@@ -335,7 +334,7 @@ def check_protected(directory, filename):
 
 
 # Rejects the archive and marks the NZB according to the REJECT_ACTION.
-##############################################################################
+###############################################################################
 def reject(reason):
     nzbid = nzb.get_nzb_id()
     nzbname = nzb.get_nzb_name()
@@ -362,13 +361,13 @@ def reject(reason):
 
 
 # Gets the temp folder for the script.
-##############################################################################
+###############################################################################
 def get_temp_path():
     return nzb.get_script_tempfolder(SCRIPT_NAME)
 
 
 # Cleanup script
-##############################################################################
+###############################################################################
 def clean_up():
     """
     Perform any script cleanup that is required here.
@@ -386,7 +385,7 @@ def clean_up():
 
 
 # Main entry-point
-##############################################################################
+###############################################################################
 def main():
     """
     We need to check to make sure the script can run in the provided
@@ -399,7 +398,7 @@ def main():
             nzb.exit(nzb.PROCESS_SUCCESS)
 
         # Determine if we have features enabled.
-        DiscImageEnabled = REJECT_DISC_IMAGES != 'Disabled'
+        DiscImageEnabled = REJECT_IMAGES != 'Disabled'
         FakeCheckEnabled = REJECT_FAKES != 'Disabled'
         PasswordCheckEnabled = REJECT_PASSWORD != 'Disabled'
         if not (DiscImageEnabled and FakeCheckEnabled and PasswordCheckEnabled):
@@ -425,7 +424,7 @@ def main():
 
 
 # Main entry-point
-##############################################################################
+###############################################################################
 main()
 
 # NZBGet is weird and doesn't use 0 to signal the successful execution of a
