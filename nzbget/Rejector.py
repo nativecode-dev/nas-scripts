@@ -297,10 +297,12 @@ def check_disc_image(filename):
     name, extension = os.path.splitext(filename)
 
     if REJECT_IMAGES == 'All' or REJECT_IMAGES == 'Image':
+        nzb.log_detail('Checking %s for rejected images: %s.' % (filename, extension))
         if extension in REJECT_IMAGE_EXTENSIONS:
             reject('Contains a disc image file (%s).' % filename)
 
     if REJECT_IMAGES == 'All' or REJECT_IMAGES == 'Rip':
+        nzb.log_detail('Checking %s for rejected images: %s.' % (filename, extension))
         if extension == '.vob' or extension == '.ifo':
             reject('Contains a file (%s) indicating it was a rip.' % filename)
 
@@ -321,6 +323,7 @@ def check_fake(filename):
     blacklisted = name.lower() in FAKE_BLACKLIST or extension.lower() in FAKE_BLACKLIST
     # TODO: Don't remember why we had to do this?
     # invalid = False if extension in nzb.MEDIA_EXTENSIONS else nzb.is_video_invalid(filename)
+    nzb.log_detail('Checking %s for being blacklisted: %s.' % (filename, blacklisted))
 
     if blacklisted:
         reject('Contains a file (%s) that appears to indicate a fake.' % filename)
@@ -329,6 +332,7 @@ def check_fake(filename):
 # Checks if the file is password protected.
 def check_protected(directory, filename):
     filepath = os.path.join(directory, filename)
+    nzb.log_detail('Checking %s for password protection.' % filepath)
     if nzb.is_rar_protected(filepath):
         reject('Requires a password to extract.')
 
