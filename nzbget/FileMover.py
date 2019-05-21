@@ -39,13 +39,13 @@
 # Allows global execution of the script to be disabled without removing the
 # script from various events.
 #
-# ScriptState=Enabled
+#ScriptState=Enabled
 
 # Category and locations.
 #
 # Set the category and path to move files.
 #
-# CategoryLocations=Other:/share/Media/Other
+#CategoryLocations=Other:/share/Media/Other
 
 ### NZBGET SCHEDULER/POST-PROCESSING SCRIPT                                ###
 ##############################################################################
@@ -63,8 +63,8 @@ import traceback
 
 # Options
 ##############################################################################
-SCRIPT_STATE = nzb.get_script_option('ScriptState')
-CATEGORIES = nzb.get_script_option_dictionary('CategoryLocations')
+SCRIPT_STATE=nzb.get_script_option('ScriptState')
+CATEGORIES=nzb.get_script_option_dictionary('CategoryLocations')
 
 
 # Handle scheduled
@@ -91,8 +91,8 @@ def on_scheduled():
 # Handle post processing
 ##############################################################################
 def on_post_processing():
-    category = nzb.get_nzb_category()
     directory = nzb.get_nzb_directory()
+    category = nzb.get_nzb_category()
     target = get_category_path(category)
 
     if os.path.isdir(directory) and target:
@@ -125,8 +125,7 @@ def get_largest_file(category, directory, target):
     populate_filelist(category, directory, target, accepted_files)
 
     if len(accepted_files) > 0:
-        accepted_files_by_size = sorted(
-            accepted_files.items(), key=operator.itemgetter(1), reverse=True)
+        accepted_files_by_size = sorted(accepted_files.items(), key=operator.itemgetter(1), reverse=True)
         largest = accepted_files_by_size[0]
         return largest[0]
 
@@ -149,7 +148,7 @@ def get_categories():
         categories.append(category['key'])
 
     return categories
-
+    
 
 def get_category_path(name):
     for category in CATEGORIES:
@@ -194,8 +193,8 @@ def main():
         # Check version of NZBGet to make sure we can run.
         nzb.check_nzb_version(13.0)
 
-        # Wire event handlers before the call.
-        # Use the form nzb.set_handler(<event>, <function>)
+        # Wire up your event handlers before the call.
+        # User the form nzb.set_handler(<event>, <function>)
         nzb.set_handler('POST_PROCESSING', on_post_processing)
         nzb.set_handler('SCHEDULED', on_scheduled)
 

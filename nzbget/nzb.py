@@ -14,7 +14,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-###############################################################################
+##############################################################################
 #
 # Some of the code has been inspired and/or lifted from other scripts written
 # by talented individuals.
@@ -23,11 +23,11 @@
 #   FakeDetector: https://github.com/nzbget/FakeDetector
 #   Completion: http://forum.nzbget.net/viewtopic.php?f=8&t=1736
 #
-###############################################################################
+##############################################################################
 
 
 # Imports
-###############################################################################
+#############################################################################
 
 import base64
 import datetime
@@ -44,31 +44,30 @@ import urllib2
 
 
 # Import aliases
-###############################################################################
+#############################################################################
 
 from xmlrpclib import ServerProxy
 
 
 # Constants
-###############################################################################
+#############################################################################
 
-PROCESS_FAIL_ENVIRONMENT = 10
-PROCESS_FAIL_RUNTIME = 11
-PROCESS_FAIL_PROXY = 12
-PROCESS_SUCCESS = 93
-PROCESS_ERROR = 94
-PROCESS_NONE = 95
+PROCESS_FAIL_ENVIRONMENT=10
+PROCESS_FAIL_RUNTIME=11
+PROCESS_FAIL_PROXY=12
+PROCESS_SUCCESS=93
+PROCESS_ERROR=94
+PROCESS_NONE=95
 
-NZBGET_HOST = os.environ['NZBOP_CONTROLIP']
-NZBGET_PORT = os.environ['NZBOP_CONTROLPORT']
-NZBGET_USERNAME = os.environ['NZBOP_CONTROLUSERNAME']
-NZBGET_PASSWORD = os.environ['NZBOP_CONTROLPASSWORD']
+NZBGET_HOST=os.environ['NZBOP_CONTROLIP']
+NZBGET_PORT=os.environ['NZBOP_CONTROLPORT']
+NZBGET_USERNAME=os.environ['NZBOP_CONTROLUSERNAME']
+NZBGET_PASSWORD=os.environ['NZBOP_CONTROLPASSWORD']
 
 # If the IP address has no real value, set to localhost.
-if NZBGET_HOST == '0.0.0.0':
-    NZBGET_HOST = '127.0.0.1'
+if NZBGET_HOST == '0.0.0.0': NZBGET_HOST = '127.0.0.1'
 
-MEDIA_EXTENSIONS = [
+MEDIA_EXTENSIONS=[
     '.avi',
     '.divx',
     '.m4v',
@@ -82,19 +81,19 @@ MEDIA_EXTENSIONS = [
 ]
 
 EVENTS = {
-    'FILE_DOWNLOADED': None,
-    'NZB_ADDED': None,
-    'NZB_DOWNLOADED': None,
-    'POST_PROCESSING': None,
-    'QUEUEING': None,
-    'SCANNING': None,
-    'SCHEDULED': None,
-    'UNKNOWN': None
+    'FILE_DOWNLOADED' : None,
+    'NZB_ADDED' : None,
+    'NZB_DOWNLOADED' : None,
+    'POST_PROCESSING' : None,
+    'QUEUEING' : None,
+    'SCANNING' : None,
+    'SCHEDULED' : None,
+    'UNKNOWN' : None
 }
 
 
 # Logging
-###############################################################################
+#############################################################################
 
 def log_debug(message):
     log_write('DEBUG', message)
@@ -121,7 +120,7 @@ def log_write(type, message):
 
 
 # API
-###############################################################################
+#############################################################################
 
 def command(url_command):
     url = 'http://%s:%s/jsonrpc/%s' % (NZBGET_HOST, NZBGET_PORT, url_command)
@@ -143,8 +142,7 @@ def proxy():
     # the url we create.
     username = urllib.quote(NZBGET_USERNAME, safe='')
     password = urllib.quote(NZBGET_PASSWORD, safe='')
-    url = 'http://%s:%s@%s:%s/xmlrpc' % (username,
-                                         password, NZBGET_HOST, NZBGET_PORT)
+    url = 'http://%s:%s@%s:%s/xmlrpc' % (username, password, NZBGET_HOST, NZBGET_PORT)
 
     log_debug('Proxy: %s.' % url)
 
@@ -152,7 +150,7 @@ def proxy():
 
 
 # Script checking
-###############################################################################
+#############################################################################
 
 def check_nzb_status():
     """
@@ -162,8 +160,7 @@ def check_nzb_status():
     status_total = get_nzb_status_total()
 
     if status_total in ['FAILURE', 'DELETED']:
-        reason = 'Exiting due to total status of %s (%s).' % (
-            status_total, status)
+        reason = 'Exiting due to total status of %s (%s).' % (status_total, status)
         exit(PROCESS_ERROR, reason)
 
 
@@ -171,13 +168,12 @@ def check_nzb_version(min_version):
     """
     Get the version from the server and determine if the script
     min_version is higher than or equal to what is running.
-    """
+    """    
     try:
         version = float(os.environ['NZBOP_VERSION'])
 
         if version < min_version:
-            reason = 'Requires version %s, but found %s.' % (
-                min_version, version)
+            reason = 'Requires version %s, but found %s.' % (min_version, version)
             exit(PROCESS_FAIL_RUNTIME, reason)
 
         log_debug('Running NZBGet %s on %s.' % (version, os.name))
@@ -197,7 +193,7 @@ def exit(exit_code, reason=None):
 
 
 # Event helpers
-###############################################################################
+#############################################################################
 
 def get_nzb_event():
     """
@@ -255,7 +251,7 @@ def execute():
 
 
 # NZBGet helpers
-###############################################################################
+#############################################################################
 
 def get_nzb_age(nzbid):
     """
@@ -315,7 +311,7 @@ def set_nzb_fail(nzbid):
     """
     client = proxy()
     nzb_files = retry(lambda: client.listfiles(0, 0, nzbid))
-
+    
     for nzb_file in nzb_files:
         nzb_file_id = int(nzb_file['ID'])
         nzb_file_name = nzb_file['Filename']
@@ -368,7 +364,7 @@ def get_nzb_tempfolder():
 
 
 # Script helpers
-###############################################################################
+##############################################################################
 
 def get_script_option(name):
     return os.environ.get('NZBPO_' + name)
@@ -382,7 +378,7 @@ def get_script_option_dictionary(name, separator=':'):
         parts = item.split(separator)
         key = parts[0]
         value = parts[1]
-        dictionary.append({'key': key, 'value': value})
+        dictionary.append({ 'key' : key, 'value' : value })
 
     return dictionary
 
@@ -403,7 +399,6 @@ def get_script_state(script_name, filename, default={}):
         return default
     else:
         return json.load(open(filepath, 'r'))
-
 
 def set_script_state(script_name, filename, state):
     """
@@ -444,7 +439,7 @@ def set_script_variable(name, value):
 
 
 # Script locking functions
-###############################################################################
+##############################################################################
 
 def lock_create(name):
     tempdir = get_nzb_tempfolder()
@@ -482,14 +477,12 @@ def lock_release(name):
 
 
 def lock_reset(name, recreate=True):
-    if lock_exists(name):
-        lock_release(name)
-    if recreate:
-        lock_create(name)
+    if lock_exists(name): lock_release(name)
+    if recreate: lock_create(name)    
 
 
 # File and path functions
-###############################################################################
+##############################################################################
 
 def get_new_files(filelist, cache_filepath=None):
     """
@@ -502,18 +495,17 @@ def get_new_files(filelist, cache_filepath=None):
             cachedlist = cachefile.read().splitlines()
             cachefile.close()
 
-        return list(set(filelist) - set(cachedlist))
+        return list(set(filelist)-set(cachedlist))
     else:
         return filelist
 
 
 # RAR functions
-###############################################################################
+##############################################################################
 
-RAR_PASSWORD_STRINGS = '*,wrong password,The specified password is incorrect,encrypted headers'
+RAR_PASSWORD_STRINGS='*,wrong password,The specified password is incorrect,encrypted headers'
 REGEX_RAR = re.compile('.*\.r(\d+)', re.IGNORECASE)
 REGEX_RAR_PART = re.compile('.*\.part(\d+)\.rar', re.IGNORECASE)
-
 
 def get_rar():
     """
@@ -539,17 +531,14 @@ def get_rar_filelist(filepath):
     """
     try:
         rar_command = [get_rar(), 'vb', filepath]
-        process = subprocess.Popen(
-            rar_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(rar_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         filelist, error = process.communicate()
 
         return filelist.splitlines()
     except Exception as e:
         traceback.print_exc()
-        log_error('Failed checking RAR contents for %s. Error was %s.' %
-                  (filepath, e))
+        log_error('Failed checking RAR contents for %s. Error was %s.' % (filepath, e))
         pass
-
 
 def get_rar_xmlfiles(filelist):
     """
@@ -564,13 +553,12 @@ def get_rar_xmlfiles(filelist):
         name, extension = os.path.splitext(file_name)
         number = get_rar_number(file_name)
 
-        # If the file was successfully parsed for a number, add it to the
-        # files.
+        # If the file was successfully parsed for a number, add it to the files.
         if number:
             files.append({
-                'filename': file_name,
-                'fileid': file_id,
-                'number': number
+                'filename' : file_name,
+                'fileid' : file_id,
+                'number' : number
             })
 
     return files
@@ -608,20 +596,18 @@ def is_rar_protected(filepath):
     """
     try:
         rar_command = [get_rar(), 'l', '-p-', '-c-', filepath]
-        rar_process = subprocess.Popen(
-            rar_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        rar_process = subprocess.Popen(rar_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         text, error = rar_process.communicate()
 
         return is_rar_password_error(text, error)
     except Exception as e:
         traceback.print_exc()
-        log_error('Failed checking RAR %s for password. Error was %s.' %
-                  (filepath, e))
+        log_error('Failed checking RAR %s for password. Error was %s.' % (filepath, e))
         return False
 
 
 # Other helpers
-###############################################################################
+##############################################################################
 
 def retry(callback, max_retries=3, seconds=0.1, pushout=True):
     count = 0
@@ -630,8 +616,7 @@ def retry(callback, max_retries=3, seconds=0.1, pushout=True):
         try:
             return callback()
         except Exception as e:
-            log_error('Retry got exception %s (%s/%s).' %
-                      (count, retry_count, e))
+            log_error('Retry got exception %s (%s/%s).' % (count, retry_count, e))
             sleep_time = seconds * count if pushout else seconds
             time.sleep(sleep_time)
             count += 1
@@ -640,7 +625,7 @@ def retry(callback, max_retries=3, seconds=0.1, pushout=True):
 
 
 # Misc helpers
-###############################################################################
+##############################################################################
 
 def guess_filename(filename):
     try:
@@ -649,8 +634,7 @@ def guess_filename(filename):
     except Exception as e:
         name, extension = os.path.splitext(filename)
         log_error(e)
-        return {'title': name}
-
+        return {'title' : name}
 
 def is_video_invalid(filename):
     name, extension = os.path.splitext(filename)
